@@ -1,10 +1,9 @@
 package com.prowllabs.prowl.core.masking
 
 import com.prowllabs.prowl.core.model.NetworkLog
-import org.json.JSONArray
-import org.json.JSONObject
+import com.prowllabs.prowl.core.util.BodyDecoder
+import com.prowllabs.prowl.core.util.JsonPrettyPrinter
 
-/** Redacts secret values in HTTP headers and JSON bodies for safe display. */
 class SensitiveDataMasker(
     val sensitiveHeaders: Set<String> = DEFAULT_SENSITIVE_HEADERS,
     val sensitiveJsonKeys: Set<String> = DEFAULT_SENSITIVE_JSON_KEYS,
@@ -22,33 +21,34 @@ class SensitiveDataMasker(
         if (body == null) return null
         val normalizedContentType = contentType?.lowercase().orEmpty()
         val maskedData = when {
-            normalizedContentType.contains("json") || looksLikeJson(body) ->
-                maskJsonBody(body) ?: maskTextBody(body)
-            else -> maskTextBody(body)
+            normalizedContentType.contains("json") || looksLikeJson(body, contentType) ->
+                maskJsonBody(body, contentType) ?: maskTextBody(body, contentType)
+            else -> maskTextBody(body, contentType)
         }
         return NetworkLog.Body(maskedData, contentType)
     }
 
-    private fun maskJsonBody(body: ByteArray): ByteArray? {
+    private fun maskJsonBody(body: ByteArray, contentType: String?): ByteArray? {
+        val charset = BodyDecoder.charsetFromContentType(contentType)
         return runCatching {
-            val text = body.toString(Charsets.UTF_8)
-            val json = JSONObject(text)
+            val text = BodyDecoder.toText(body, contentType)
+            val json = org.json.JSONObject(text)
             maskJsonObject(json)
-            json.toString(2).toByteArray(Charsets.UTF_8)
+            JsonPrettyPrinter.format(json).toByteArray(charset)
         }.getOrNull() ?: runCatching {
-            val text = body.toString(Charsets.UTF_8)
-            val json = JSONArray(text)
+            val text = BodyDecoder.toText(body, contentType)
+            val json = org.json.JSONArray(text)
             maskJsonArray(json)
-            json.toString(2).toByteArray(Charsets.UTF_8)
+            JsonPrettyPrinter.format(json).toByteArray(charset)
         }.getOrNull()
     }
 
-    private fun maskJsonObject(json: JSONObject) {
+    private fun maskJsonObject(json: org.json.JSONObject) {
         val keys = json.keys().asSequence().toList()
         for (key in keys) {
             when (val value = json.get(key)) {
-                is JSONObject -> maskJsonObject(value)
-                is JSONArray -> maskJsonArray(value)
+                is org.json.JSONObject -> maskJsonObject(value)
+                is org.json.JSONArray -> maskJsonArray(value)
                 else -> if (key.lowercase() in normalizedJsonKeys) {
                     json.put(key, redactionToken)
                 }
@@ -56,25 +56,26 @@ class SensitiveDataMasker(
         }
     }
 
-    private fun maskJsonArray(array: JSONArray) {
+    private fun maskJsonArray(array: org.json.JSONArray) {
         for (index in 0 until array.length()) {
             when (val value = array.get(index)) {
-                is JSONObject -> maskJsonObject(value)
-                is JSONArray -> maskJsonArray(value)
+                is org.json.JSONObject -> maskJsonObject(value)
+                is org.json.JSONArray -> maskJsonArray(value)
             }
         }
     }
 
-    private fun maskTextBody(body: ByteArray): ByteArray {
-        var text = body.toString(Charsets.UTF_8)
+    private fun maskTextBody(body: ByteArray, contentType: String?): ByteArray {
+        val charset = BodyDecoder.charsetFromContentType(contentType)
+        var text = BodyDecoder.toText(body, contentType)
         BEARER_REGEX.replace(text) { "${it.groupValues[1]}$redactionToken" }.also { text = it }
         COOKIE_REGEX.replace(text) { "${it.groupValues[1]}$redactionToken" }.also { text = it }
         PEM_REGEX.replace(text, redactionToken).also { text = it }
-        return text.toByteArray(Charsets.UTF_8)
+        return text.toByteArray(charset)
     }
 
-    private fun looksLikeJson(body: ByteArray): Boolean {
-        val trimmed = body.toString(Charsets.UTF_8).trimStart()
+    private fun looksLikeJson(body: ByteArray, contentType: String?): Boolean {
+        val trimmed = BodyDecoder.toText(body, contentType).trimStart()
         return trimmed.startsWith("{") || trimmed.startsWith("[")
     }
 

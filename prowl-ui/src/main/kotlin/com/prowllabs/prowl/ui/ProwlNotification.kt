@@ -9,26 +9,26 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.prowllabs.prowl.core.runtime.ProwlRuntime
+import com.prowllabs.prowl.ui.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-/** Chucker-style persistent notification that opens the inspector. */
 object ProwlNotification {
     private const val CHANNEL_ID = "prowl_inspector"
     private const val NOTIFICATION_ID = 0x70726F77 // "prow"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var observing = false
+    private var collectorJob: Job? = null
 
     fun show(context: Context) {
         createChannel(context)
         update(context, 0)
-        if (!observing) {
-            observing = true
-            scope.launch {
+        if (collectorJob?.isActive != true) {
+            collectorJob = scope.launch {
                 ProwlRuntime.storage.logsFlow.collectLatest { logs ->
                     update(context.applicationContext, logs.size)
                 }
@@ -37,8 +37,9 @@ object ProwlNotification {
     }
 
     fun dismiss(context: Context) {
+        collectorJob?.cancel()
+        collectorJob = null
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
-        observing = false
     }
 
     private fun update(context: Context, count: Int) {
@@ -50,10 +51,11 @@ object ProwlNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val requestLabel = if (count == 1) "Captured request" else "Captured requests"
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_menu_search)
-            .setContentTitle("Prowl network inspector")
-            .setContentText("$count captured requests")
+            .setSmallIcon(R.drawable.ic_prowl_notification)
+            .setContentTitle("Prowl")
+            .setContentText("$count $requestLabel")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

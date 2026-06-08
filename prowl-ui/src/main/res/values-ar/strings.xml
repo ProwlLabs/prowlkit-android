@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prowl_title">Prowl</string>
+    <string name="prowl_close">إغلاق</string>
+    <string name="prowl_settings">الإعدادات</string>
+    <string name="prowl_clear_logs">مسح السجلات</string>
+    <string name="prowl_clear_dialog_title">مسح جميع الطلبات؟</string>
+    <string name="prowl_clear_dialog_message">حذف %1$d طلباً. لا يمكن التراجع.</string>
+    <string name="prowl_clear_confirm">حذف الكل</string>
+    <string name="prowl_cancel">إلغاء</string>
+    <string name="prowl_empty_logs">لا توجد طلبات بعد</string>
+    <string name="prowl_no_matches">لا توجد نتائج</string>
+    <string name="prowl_search_hint">بحث باسم الطلب أو العنوان</string>
+    <string name="prowl_request_detail">تفاصيل الطلب</string>
+    <string name="prowl_tab_info">معلومات</string>
+    <string name="prowl_tab_request">الطلب</string>
+    <string name="prowl_tab_response">الاستجابة</string>
+    <string name="prowl_copy">نسخ</string>
+    <string name="prowl_host_ip">عنوان IP</string>
+    <string name="prowl_timing">التوقيت</string>
+    <string name="prowl_theme">المظهر</string>
+    <string name="prowl_theme_system">النظام</string>
+    <string name="prowl_theme_light">فاتح</string>
+    <string name="prowl_theme_dark">داكن</string>
+    <string name="prowl_shake_open">هزّ لفتح المفتش</string>
+    <string name="prowl_shake_clear">هزّ لمسح السجلات</string>
+    <string name="prowl_export_har">تصدير HAR</string>
+    <string name="prowl_export_mocks">تصدير قواعد المحاكاة</string>
+    <string name="prowl_import_mocks">استيراد قواعد المحاكاة</string>
+</resources>

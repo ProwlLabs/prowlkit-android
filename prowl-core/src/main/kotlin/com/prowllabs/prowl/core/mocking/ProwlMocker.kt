@@ -2,7 +2,6 @@ package com.prowllabs.prowl.core.mocking
 
 import java.util.UUID
 
-/** A rule that intercepts matching requests and returns a synthetic HTTP response. */
 data class ProwlMockRule(
     val id: UUID = UUID.randomUUID(),
     val targetUrlPattern: String,
@@ -39,13 +38,13 @@ data class ProwlMockRule(
     }
 }
 
-/** In-memory mock rule store and matcher. */
 class ProwlMocker {
     private val lock = Any()
     private val rules = mutableListOf<ProwlMockRule>()
 
     fun addRule(rule: ProwlMockRule) {
         synchronized(lock) { rules.add(rule) }
+        notifyChanged()
     }
 
     fun updateRule(rule: ProwlMockRule) {
@@ -53,14 +52,24 @@ class ProwlMocker {
             val index = rules.indexOfFirst { it.id == rule.id }
             if (index >= 0) rules[index] = rule
         }
+        notifyChanged()
     }
 
     fun removeRule(id: UUID) {
         synchronized(lock) { rules.removeAll { it.id == id } }
+        notifyChanged()
     }
 
     fun removeAllRules() {
         synchronized(lock) { rules.clear() }
+        ProwlMockPersistence.clearAsync()
+    }
+
+    fun replaceAllRules(newRules: List<ProwlMockRule>) {
+        synchronized(lock) {
+            rules.clear()
+            rules.addAll(newRules)
+        }
     }
 
     fun allRules(): List<ProwlMockRule> = synchronized(lock) { rules.toList() }
@@ -78,6 +87,11 @@ class ProwlMocker {
                 true
             }
         }
+    }
+
+    private fun notifyChanged() {
+        val snapshot = allRules()
+        ProwlMockPersistence.persistAsync(snapshot)
     }
 
     companion object {

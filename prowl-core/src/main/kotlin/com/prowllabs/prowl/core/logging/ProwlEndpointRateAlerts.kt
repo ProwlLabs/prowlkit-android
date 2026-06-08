@@ -3,7 +3,6 @@ package com.prowllabs.prowl.core.logging
 import com.prowllabs.prowl.core.model.NetworkLog
 import java.util.UUID
 
-/** A rule that flags an endpoint when request volume crosses a threshold. */
 data class ProwlEndpointRateAlertRule(
     val id: UUID = UUID.randomUUID(),
     val match: Match,
@@ -24,7 +23,7 @@ object ProwlEndpointRateAlerts {
 
     fun resetCounters() = coordinator.reset()
 
-    internal fun evaluate(log: NetworkLog): Boolean = coordinator.evaluate(log)
+    fun evaluate(log: NetworkLog): Boolean = coordinator.evaluate(log)
 }
 
 private class ProwlEndpointRateAlertCoordinator {
@@ -65,7 +64,6 @@ private class ProwlEndpointRateAlertCoordinator {
         }
 }
 
-/** Decode response bodies for display only — live responses are unchanged. */
 fun interface ResponseBodyLoggingTransformer {
     fun transform(body: ByteArray, contentType: String?): ByteArray?
 }

@@ -2,7 +2,6 @@ package com.prowllabs.prowl.core.model
 
 import java.util.UUID
 
-/** A single captured network round-trip with request, response, and metadata. */
 data class NetworkLog(
     val id: UUID = UUID.randomUUID(),
     val requestId: UUID = UUID.randomUUID(),
@@ -19,6 +18,12 @@ data class NetworkLog(
     val cachePolicy: String? = null,
     val errorDescription: String? = null,
     val endpointRateAlertTriggered: Boolean = false,
+    val hostIp: String? = null,
+    val protocol: NetworkProtocol = NetworkProtocol.HTTP,
+    val timing: RequestTiming? = null,
+    val requestMultipartParts: List<MultipartPart> = emptyList(),
+    val responseMultipartParts: List<MultipartPart> = emptyList(),
+    val requestRewritten: Boolean = false,
 ) {
     data class Body(
         val data: ByteArray,

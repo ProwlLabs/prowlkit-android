@@ -1,178 +1,550 @@
 package com.prowllabs.prowl.ui.screen
 
-import android.content.Intent
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.prowllabs.prowl.core.formatting.ProwlLogFormatter
 import com.prowllabs.prowl.core.model.NetworkLog
 import com.prowllabs.prowl.core.runtime.ProwlRuntime
+import com.prowllabs.prowl.ui.components.ProwlCapsuleTabBar
+import com.prowllabs.prowl.ui.components.ProwlCopyToast
+import com.prowllabs.prowl.ui.components.ProwlFooterCredit
+import com.prowllabs.prowl.ui.components.ProwlLabeledValue
+import com.prowllabs.prowl.ui.components.ProwlMethodCapsule
+import com.prowllabs.prowl.ui.components.ProwlMethodStatusLine
+import com.prowllabs.prowl.ui.components.ProwlSectionCard
+import com.prowllabs.prowl.ui.components.ProwlSectionHeader
+import com.prowllabs.prowl.ui.components.ProwlShareSheet
+import com.prowllabs.prowl.ui.components.ProwlStatusCapsule
+import com.prowllabs.prowl.ui.theme.ProwlColors
+import com.prowllabs.prowl.ui.components.ProwlBodyViewer
+import com.prowllabs.prowl.ui.components.ProwlMultipartViewer
+import com.prowllabs.prowl.ui.R
+import com.prowllabs.prowl.ui.util.ProwlWatchStore
+import com.prowllabs.prowl.ui.util.formattedDurationSeconds
+import com.prowllabs.prowl.ui.util.formattedResponseAt
+import com.prowllabs.prowl.ui.util.formattedStartedAt
+import com.prowllabs.prowl.ui.util.urlQueryItems
 import java.util.UUID
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogDetailScreen(
     logId: UUID,
     onBack: () -> Unit,
-    onCreateMock: () -> Unit,
 ) {
     val logs by ProwlRuntime.storage.logsFlow.collectAsState()
     val log = logs.firstOrNull { it.id == logId }
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
-    var shareMenuExpanded by remember { mutableStateOf(false) }
+    var shareVisible by remember { mutableStateOf(false) }
+    var mockVisible by remember { mutableStateOf(false) }
+    var rewriteVisible by remember { mutableStateOf(false) }
+    var copyToast by remember { mutableStateOf<String?>(null) }
+    var isWatched by remember(log?.id) {
+        mutableStateOf(log?.let { ProwlWatchStore.isWatched(context, it) } ?: false)
+    }
+
+    LaunchedEffect(copyToast) {
+        if (copyToast != null) {
+            delay(2_000)
+            copyToast = null
+        }
+    }
+
+    ProwlShareSheet(
+        visible = shareVisible && log != null,
+        onDismiss = { shareVisible = false },
+        onShareJson = { log?.let { ProwlLogFormatter.shareText(it) }.orEmpty() },
+        onShareCurl = { log?.let { ProwlLogFormatter.curlCommand(it) }.orEmpty() },
+        onCreateMock = { mockVisible = true },
+        onCreateRequestRewrite = { rewriteVisible = true },
+        onCopied = { copyToast = it },
+    )
+
+    if (log != null) {
+        MockEditorBottomSheet(
+            log = log,
+            visible = mockVisible,
+            onDismiss = { mockVisible = false },
+            onSaved = {
+                mockVisible = false
+                copyToast = context.getString(R.string.prowl_mock_saved)
+            },
+        )
+        RequestRewriteEditorBottomSheet(
+            log = log,
+            visible = rewriteVisible,
+            onDismiss = { rewriteVisible = false },
+            onSaved = {
+                rewriteVisible = false
+                copyToast = context.getString(R.string.prowl_rewrite_saved)
+            },
+        )
+    }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Request Detail") },
+                title = {
+                    Column {
+                        Text(stringResource(R.string.prowl_request_detail), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        log?.let {
+                            ProwlMethodStatusLine(
+                                method = it.method,
+                                statusCode = it.statusCode,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.prowl_back))
                     }
                 },
                 actions = {
-                    IconButton(onClick = onCreateMock) {
-                        Icon(Icons.Default.Edit, contentDescription = "Create mock")
-                    }
-                    IconButton(onClick = { shareMenuExpanded = true }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share")
-                    }
-                    DropdownMenu(
-                        expanded = shareMenuExpanded,
-                        onDismissRequest = { shareMenuExpanded = false },
+                    IconButton(
+                        onClick = {
+                            log?.let {
+                                isWatched = ProwlWatchStore.toggleWatch(context, it)
+                            }
+                        },
+                        enabled = log != null,
                     ) {
-                        DropdownMenuItem(
-                            text = { Text("Share JSON") },
-                            onClick = {
-                                shareMenuExpanded = false
-                                log?.let { shareText(context, ProwlLogFormatter.shareText(it)) }
-                            },
+                        Icon(
+                            imageVector = if (isWatched) Icons.Outlined.Star else Icons.Outlined.StarOutline,
+                            contentDescription = stringResource(
+                                if (isWatched) R.string.prowl_unwatch_endpoint else R.string.prowl_watch_endpoint,
+                            ),
                         )
-                        DropdownMenuItem(
-                            text = { Text("Share cURL") },
-                            onClick = {
-                                shareMenuExpanded = false
-                                log?.let { shareText(context, ProwlLogFormatter.curlCommand(it)) }
-                            },
-                        )
+                    }
+                    IconButton(onClick = { shareVisible = true }, enabled = log != null) {
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.prowl_share))
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
             )
         },
     ) { padding ->
-        if (log == null) {
-            Text(
-                text = "Log not found",
-                modifier = Modifier.padding(padding).padding(16.dp),
-            )
-            return@Scaffold
-        }
-
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Info") })
-                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Request") })
-                Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Response") })
+            if (log == null) {
+                Text(text = stringResource(R.string.prowl_log_not_found), modifier = Modifier.padding(16.dp))
+                return@Scaffold
             }
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-            ) {
-                when (selectedTab) {
-                    0 -> InfoTab(log)
-                    1 -> PayloadTab(
-                        headers = log.requestHeaders,
-                        body = log.requestBody,
-                    )
-                    2 -> PayloadTab(
-                        headers = log.responseHeaders,
-                        body = log.responseBody,
-                    )
+
+            Column(modifier = Modifier.fillMaxSize()) {
+                ProwlCapsuleTabBar(
+                    tabs = listOf(
+                        stringResource(R.string.prowl_tab_info),
+                        stringResource(R.string.prowl_tab_request),
+                        stringResource(R.string.prowl_tab_response),
+                    ),
+                    selectedIndex = selectedTab,
+                    onSelect = { selectedTab = it },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    when (selectedTab) {
+                        0 -> InfoTab(log, onCopy = { copyToast = it })
+                        1 -> RequestTab(log, onCopy = { label, value ->
+                            copyToClipboard(context, label, value)
+                            copyToast = "$label copied"
+                        })
+                        2 -> ResponseTab(log, onCopy = { label, value ->
+                            copyToClipboard(context, label, value)
+                            copyToast = "$label copied"
+                        })
+                    }
+                    ProwlFooterCredit()
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun InfoTab(log: NetworkLog) {
-    Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-        DetailLine("URL", log.url.orEmpty())
-        DetailLine("Method", log.method)
-        DetailLine("Status", log.statusCode?.toString() ?: "N/A")
-        DetailLine("Duration", "${log.durationMillis} ms")
-        if (log.endpointRateAlertTriggered) {
-            Text(
-                text = "Endpoint rate alert triggered",
-                color = MaterialTheme.colorScheme.error,
+            ProwlCopyToast(
+                message = copyToast,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 24.dp),
             )
         }
-        log.errorDescription?.let { DetailLine("Error", it) }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RequestRewriteEditorBottomSheet(
+    log: NetworkLog,
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onSaved: () -> Unit,
+) {
+    if (!visible) return
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        RequestRewriteEditorSheetContent(
+            sourceLog = log,
+            onSaved = onSaved,
+            modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MockEditorBottomSheet(
+    log: NetworkLog,
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    onSaved: () -> Unit,
+) {
+    if (!visible) return
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        MockEditorSheetContent(
+            sourceLog = log,
+            onSaved = onSaved,
+            modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp),
+        )
     }
 }
 
 @Composable
-private fun PayloadTab(headers: Map<String, String>, body: NetworkLog.Body?) {
-    Text("Headers", style = MaterialTheme.typography.titleSmall)
-    headers.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (key, value) ->
-        Text("$key: $value", fontFamily = FontFamily.Monospace)
+private fun InfoTab(log: NetworkLog, onCopy: (String) -> Unit) {
+    val context = LocalContext.current
+
+    ProwlSectionCard(title = "Endpoint") {
+        if (log.requestRewritten) {
+            Text(
+                text = stringResource(R.string.prowl_request_was_rewritten),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(ProwlColors.MethodPost.copy(alpha = 0.12f))
+                    .padding(10.dp),
+                fontSize = 12.sp,
+                color = ProwlColors.MethodPost,
+            )
+        }
+        if (log.endpointRateAlertTriggered) {
+            Text(
+                text = "⚡ Endpoint rate threshold reached for this request.",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(ProwlColors.Status4xx.copy(alpha = 0.12f))
+                    .padding(10.dp),
+                fontSize = 12.sp,
+                color = ProwlColors.Status4xx,
+            )
+        }
+        ProwlLabeledValue(
+            label = "URL",
+            value = log.url.orEmpty().ifBlank { "-" },
+            onCopy = {
+                copyToClipboard(context, "URL", log.url.orEmpty())
+                onCopy("URL")
+            },
+        )
+        log.hostIp?.let { ip ->
+            ProwlLabeledValue(
+                label = "Host IP",
+                value = ip,
+                onCopy = {
+                    copyToClipboard(context, "Host IP", ip)
+                    onCopy("Host IP")
+                },
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ProwlMethodCapsule(method = log.method) {
+                copyToClipboard(context, "Method", log.method)
+                onCopy("Method")
+            }
+            ProwlStatusCapsule(statusCode = log.statusCode) {
+                copyToClipboard(context, "Status", log.statusCode?.toString() ?: "No response")
+                onCopy("Status")
+            }
+        }
+        log.errorDescription?.let { error ->
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+            )
+            ProwlLabeledValue(
+                label = "Error",
+                value = error,
+                valueColor = MaterialTheme.colorScheme.error,
+                onCopy = {
+                    copyToClipboard(context, "Error", error)
+                    onCopy("Error")
+                },
+            )
+        }
     }
-    Text("Body", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
-    Text(
-        text = body?.let { ProwlLogFormatter.prettyBodyText(it) } ?: "(empty)",
-        fontFamily = FontFamily.Monospace,
-        modifier = Modifier.fillMaxWidth(),
+
+    ProwlSectionCard(title = "Timing") {
+        ProwlLabeledValue(
+            label = "Request date",
+            value = log.formattedStartedAt(),
+            onCopy = {
+                copyToClipboard(context, "Request date", log.formattedStartedAt())
+                onCopy("Request date")
+            },
+        )
+        if (log.statusCode != null) {
+            ProwlLabeledValue(
+                label = "Response date",
+                value = log.formattedResponseAt(),
+                onCopy = {
+                    copyToClipboard(context, "Response date", log.formattedResponseAt())
+                    onCopy("Response date")
+                },
+            )
+            ProwlLabeledValue(
+                label = "Time interval",
+                value = log.formattedDurationSeconds(),
+                onCopy = {
+                    copyToClipboard(context, "Time interval", log.formattedDurationSeconds())
+                    onCopy("Time interval")
+                },
+            )
+        }
+        ProwlLabeledValue(
+            label = "Timeout",
+            value = log.timeoutMillis?.toString() ?: "-",
+            onCopy = {
+                copyToClipboard(context, "Timeout", log.timeoutMillis?.toString() ?: "-")
+                onCopy("Timeout")
+            },
+        )
+        ProwlLabeledValue(
+            label = "Cache policy",
+            value = log.cachePolicy ?: "-",
+            onCopy = {
+                copyToClipboard(context, "Cache policy", log.cachePolicy ?: "-")
+                onCopy("Cache policy")
+            },
+        )
+        log.timing?.let { timing ->
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+            )
+            timing.dnsMillis?.let {
+                ProwlLabeledValue("DNS", "${it}ms", onCopy = {
+                    copyToClipboard(context, "DNS", "${it}ms"); onCopy("DNS")
+                })
+            }
+            timing.connectMillis?.let {
+                ProwlLabeledValue("Connect", "${it}ms", onCopy = {
+                    copyToClipboard(context, "Connect", "${it}ms"); onCopy("Connect")
+                })
+            }
+            timing.secureConnectMillis?.let {
+                ProwlLabeledValue("TLS", "${it}ms", onCopy = {
+                    copyToClipboard(context, "TLS", "${it}ms"); onCopy("TLS")
+                })
+            }
+            timing.requestBodyMillis?.let {
+                ProwlLabeledValue("Request body", "${it}ms", onCopy = {
+                    copyToClipboard(context, "Request body", "${it}ms"); onCopy("Request body")
+                })
+            }
+            timing.responseBodyMillis?.let {
+                ProwlLabeledValue("Response body", "${it}ms", onCopy = {
+                    copyToClipboard(context, "Response body", "${it}ms"); onCopy("Response body")
+                })
+            }
+        }
+    }
+
+    val queryItems = log.urlQueryItems()
+    if (queryItems.isNotEmpty()) {
+        ProwlSectionCard(title = "URL Query Strings") {
+            queryItems.forEach { (key, value) ->
+                ProwlLabeledValue(
+                    label = key,
+                    value = value.ifBlank { "(empty)" },
+                    onCopy = {
+                        copyToClipboard(context, key, value)
+                        onCopy(key)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RequestTab(
+    log: NetworkLog,
+    onCopy: (String, String) -> Unit,
+) {
+    ProwlSectionHeader(title = "Request")
+    PayloadSection(
+        headers = log.requestHeaders,
+        body = log.requestBody,
+        multipartParts = log.requestMultipartParts,
+        emptyHeadersText = "Request headers are empty",
+        emptyBodyText = "Request body is empty",
+        bodyToastLabel = "Request body",
+        onCopy = onCopy,
     )
 }
 
 @Composable
-private fun DetailLine(label: String, value: String) {
-    Text(label, style = MaterialTheme.typography.labelMedium)
-    Text(value, fontFamily = FontFamily.Monospace)
+private fun ResponseTab(
+    log: NetworkLog,
+    onCopy: (String, String) -> Unit,
+) {
+    ProwlSectionHeader(title = "Response")
+    PayloadSection(
+        headers = log.responseHeaders,
+        body = log.responseBody,
+        multipartParts = log.responseMultipartParts,
+        emptyHeadersText = "Response headers are empty",
+        emptyBodyText = "Response body is empty",
+        bodyToastLabel = "Response body",
+        onCopy = onCopy,
+    )
 }
 
-private fun shareText(context: android.content.Context, text: String) {
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, text)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+@Composable
+private fun PayloadSection(
+    headers: Map<String, String>,
+    body: NetworkLog.Body?,
+    multipartParts: List<com.prowllabs.prowl.core.model.MultipartPart>,
+    emptyHeadersText: String,
+    emptyBodyText: String,
+    bodyToastLabel: String,
+    onCopy: (String, String) -> Unit,
+) {
+    ProwlSectionCard(title = "Headers") {
+        if (headers.isEmpty()) {
+            Text(emptyHeadersText, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            headers.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (key, value) ->
+                HeaderRow(key, value, onCopy)
+            }
+        }
     }
-    context.startActivity(Intent.createChooser(intent, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+
+    if (multipartParts.isNotEmpty()) {
+        ProwlSectionCard(title = "Multipart") {
+            ProwlMultipartViewer(parts = multipartParts)
+        }
+    }
+
+    ProwlSectionCard(title = "Body") {
+        val bodyText = body?.let { ProwlLogFormatter.prettyBodyText(it) }.orEmpty()
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.background)
+                .clickable(enabled = body != null && bodyText.isNotBlank()) {
+                    if (bodyText.isNotBlank()) onCopy(bodyToastLabel, bodyText)
+                }
+                .padding(12.dp),
+        ) {
+            ProwlBodyViewer(
+                body = body,
+                emptyText = emptyBodyText,
+                onCopy = { onCopy(bodyToastLabel, bodyText) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderRow(key: String, value: String, onCopy: (String, String) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCopy(key, "$key: $value") }
+            .padding(vertical = 6.dp),
+    ) {
+        Text(
+            text = key,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = ProwlColors.JsonKey,
+        )
+        Text(
+            text = value,
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(top = 3.dp),
+        )
+    }
+}
+
+private fun copyToClipboard(context: Context, label: String, value: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, value))
 }

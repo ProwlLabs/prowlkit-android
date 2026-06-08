@@ -19,4 +19,5 @@ rootProject.name = "prowlkit-android"
 include(":prowl-core")
 include(":prowl-ui")
 include(":prowl")
+include(":prowl-grpc")
 include(":sample")

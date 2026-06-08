@@ -42,6 +42,11 @@ val libraryPublishConfig = mapOf(
         "ProwlKit",
         "Android network debugger with mocking — Chucker-style inspector with ProwlKit feature parity.",
     ),
+    "prowl-grpc" to Triple(
+        "prowl-grpc",
+        "ProwlKit gRPC",
+        "gRPC ClientInterceptor for ProwlKit Android network inspection.",
+    ),
 )
 
 subprojects {
@@ -155,6 +160,7 @@ tasks.register("publishAllToMavenLocal") {
         ":prowl-core:publishReleasePublicationToMavenLocal",
         ":prowl-ui:publishReleasePublicationToMavenLocal",
         ":prowl:publishReleasePublicationToMavenLocal",
+        ":prowl-grpc:publishReleasePublicationToMavenLocal",
     )
 }
 

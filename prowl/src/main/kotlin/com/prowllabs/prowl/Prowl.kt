@@ -8,11 +8,21 @@ import com.prowllabs.prowl.core.logging.ResponseBodyLoggingTransformer
 import com.prowllabs.prowl.core.masking.SensitiveDataMasker
 import com.prowllabs.prowl.core.mocking.ProwlMockRule
 import com.prowllabs.prowl.core.mocking.ProwlMocker
+import com.prowllabs.prowl.core.mocking.ProwlRequestRewriteRule
+import com.prowllabs.prowl.core.mocking.ProwlRequestRewriter
 import com.prowllabs.prowl.core.runtime.ProwlRuntime
 import com.prowllabs.prowl.core.storage.ProwlStorage
 import com.prowllabs.prowl.ui.ProwlNotification
 import com.prowllabs.prowl.ui.ProwlUiLauncher
+import com.prowllabs.prowl.ui.util.ProwlFloatingBubble
+import com.prowllabs.prowl.ui.util.ProwlGlobalShakeMonitor
+import com.prowllabs.prowl.ui.util.ProwlUiPreferences
 import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import com.prowllabs.prowl.core.websocket.ProwlWebSocket
 import java.util.UUID
 
 /**
@@ -65,6 +75,8 @@ object Prowl {
 
     fun mocker(): ProwlMocker = ProwlRuntime.mocker
 
+    fun requestRewriter(): ProwlRequestRewriter = ProwlRuntime.requestRewriter
+
     fun mockRules(): List<ProwlMockRule> = ProwlRuntime.mocker.allRules()
 
     fun addMockRule(rule: ProwlMockRule) = ProwlRuntime.mocker.addRule(rule)
@@ -78,6 +90,24 @@ object Prowl {
     fun setMockRuleEnabled(id: UUID, enabled: Boolean) {
         val rule = ProwlRuntime.mocker.allRules().firstOrNull { it.id == id } ?: return
         ProwlRuntime.mocker.updateRule(rule.copy(isEnabled = enabled))
+    }
+
+    fun requestRewriteRules(): List<ProwlRequestRewriteRule> =
+        ProwlRuntime.requestRewriter.allRules()
+
+    fun addRequestRewriteRule(rule: ProwlRequestRewriteRule) =
+        ProwlRuntime.requestRewriter.addRule(rule)
+
+    fun updateRequestRewriteRule(rule: ProwlRequestRewriteRule) =
+        ProwlRuntime.requestRewriter.updateRule(rule)
+
+    fun removeRequestRewriteRule(id: UUID) = ProwlRuntime.requestRewriter.removeRule(id)
+
+    fun removeAllRequestRewriteRules() = ProwlRuntime.requestRewriter.removeAllRules()
+
+    fun setRequestRewriteRuleEnabled(id: UUID, enabled: Boolean) {
+        val rule = ProwlRuntime.requestRewriter.allRules().firstOrNull { it.id == id } ?: return
+        ProwlRuntime.requestRewriter.updateRule(rule.copy(isEnabled = enabled))
     }
 
     fun resetEndpointRateAlertCounters() {
@@ -101,10 +131,6 @@ object Prowl {
         ProwlRuntime.configure(storage, masker, isLoggingEnabled, isSensitiveDataMaskingEnabled)
     }
 
-    /**
-     * Starts Prowl: enables the notification shortcut (Chucker-style) and marks
-     * the library as active. Wire [interceptor] into your OkHttp client separately.
-     */
     fun start(
         context: Context,
         ignoredUrls: List<String> = emptyList(),
@@ -115,6 +141,16 @@ object Prowl {
 
         val appContext = context.applicationContext
         this.appContext = appContext
+        ProwlRuntime.setHostApplicationContext(appContext)
+        ProwlRuntime.restorePersistedMocks()
+        ProwlRuntime.restorePersistedRequestRewrites()
+        ProwlRuntime.isSessionPersistenceEnabled =
+            ProwlUiPreferences.isSessionPersistenceEnabled(appContext)
+        ProwlRuntime.restorePersistedSession()
+        if (appContext is Application) {
+            ProwlGlobalShakeMonitor.install(appContext)
+            ProwlFloatingBubble.install(appContext)
+        }
         ignoredUrls.forEach(::ignoreUrl)
         ignoredUrlRegexes.forEach(::ignoreUrlRegex)
 
@@ -143,6 +179,8 @@ object Prowl {
     }
 }
 
-/** Convenience for OkHttp client builders. */
 fun okhttp3.OkHttpClient.Builder.applyProwl(): okhttp3.OkHttpClient.Builder =
-    addInterceptor(Prowl.interceptor)
+    com.prowllabs.prowl.core.interceptor.ProwlOkHttp.run { applyProwl() }
+
+fun OkHttpClient.newProwlWebSocket(request: Request, listener: WebSocketListener): WebSocket =
+    newWebSocket(request, ProwlWebSocket.listener(listener, request))

@@ -1,6 +1,6 @@
 # Copy to publish.properties (gitignored) or set in ~/.gradle/gradle.properties
 
-GROUP=com.prowllabs.prowl
+GROUP=io.github.prowllabs
 VERSION=0.1.0
 
 # GitHub Packages (https://github.com/ProwlLabs/prowlkit-android/packages)

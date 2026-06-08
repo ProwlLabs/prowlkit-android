@@ -76,7 +76,7 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    implementation("com.prowllabs.prowl:prowl:0.1.0")
+    implementation("io.github.prowllabs:prowl:0.1.0")
 }
 ```
 
@@ -91,15 +91,15 @@ gpr.key=ghp_xxxxxxxxxxxxxxxxxxxx
 
 ```kotlin
 dependencies {
-    implementation("com.prowllabs.prowl:prowl:0.1.0")
+    implementation("io.github.prowllabs:prowl:0.1.0")
 }
 ```
 
 Granular modules (optional):
 
 ```kotlin
-implementation("com.prowllabs.prowl:prowl-core:0.1.0") // interceptor only
-implementation("com.prowllabs.prowl:prowl-ui:0.1.0")   // UI only
+implementation("io.github.prowllabs:prowl-core:0.1.0") // interceptor only
+implementation("io.github.prowllabs:prowl-ui:0.1.0")   // UI only
 ```
 
 ## Publish
@@ -123,7 +123,7 @@ CI workflow `.github/workflows/publish.yml` runs on GitHub **Release published**
 
 ### Maven Central checklist
 
-1. Register namespace `com.prowllabs` at [central.sonatype.com](https://central.sonatype.com/).
+1. Namespace `io.github.prowllabs` verified at [central.sonatype.com](https://central.sonatype.com/).
 2. Add repo secrets: `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `SIGNING_KEY`, `SIGNING_PASSWORD`.
 3. Tag release (e.g. `v0.1.0`) and publish; close + release the staging repo in Sonatype UI.
 

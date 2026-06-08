@@ -23,7 +23,7 @@ fun publishProperty(key: String): String? =
         ?: findProperty(key) as String?
         ?: System.getenv(key)
 
-val publishGroupId: String = publishProperty("GROUP") ?: "com.prowllabs.prowl"
+val publishGroupId: String = publishProperty("GROUP") ?: "io.github.prowllabs"
 val publishVersion: String = publishProperty("VERSION") ?: "0.0.0-SNAPSHOT"
 
 val libraryPublishConfig = mapOf(

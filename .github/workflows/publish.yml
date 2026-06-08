@@ -45,7 +45,7 @@ jobs:
         run: |
           VERSION="${VERSION#v}"
           cat > publish.properties <<EOF
-          GROUP=com.prowllabs.prowl
+          GROUP=io.github.prowllabs
           VERSION=${VERSION}
           GITHUB_ACTOR=${GITHUB_ACTOR}
           GITHUB_TOKEN=${GITHUB_TOKEN}

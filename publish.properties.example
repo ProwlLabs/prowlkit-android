@@ -12,6 +12,8 @@ MAVEN_CENTRAL_USERNAME=your-sonatype-token-username
 MAVEN_CENTRAL_PASSWORD=your-sonatype-token-password
 
 # OpenPGP signing (required for Maven Central releases)
+# Generate: gpg --full-generate-key  (or see scripts/publish-maven-central.sh)
+# Upload public key: gpg --keyserver keyserver.ubuntu.com --send-keys YOUR_KEY_ID
 # Paste the ASCII-armored private key block; use \n for line breaks if single-line.
 SIGNING_KEY=
 SIGNING_PASSWORD=

@@ -12,3 +12,4 @@ build/
 *.ap_
 *.aab
 publish.properties
+.gnupg/

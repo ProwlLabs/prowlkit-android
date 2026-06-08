@@ -29,12 +29,15 @@ object ProwlRoutes {
     const val DETAIL = "detail/{logId}"
     const val SETTINGS = "settings"
     const val MOCKS = "mocks"
-    const val MOCK_EDITOR = "mock_editor?logId={logId}"
+    const val MOCK_EDITOR = "mock_editor?logId={logId}&ruleId={ruleId}"
     const val REQUEST_REWRITE_EDITOR = "request_rewrite_editor?logId={logId}"
 
     fun detail(logId: UUID) = "detail/$logId"
-    fun mockEditor(logId: UUID?) =
-        if (logId != null) "mock_editor?logId=$logId" else "mock_editor"
+    fun mockEditor(logId: UUID? = null, ruleId: UUID? = null): String {
+        val logPart = logId?.toString().orEmpty()
+        val rulePart = ruleId?.toString().orEmpty()
+        return "mock_editor?logId=$logPart&ruleId=$rulePart"
+    }
     fun requestRewriteEditor(logId: UUID?) =
         if (logId != null) "request_rewrite_editor?logId=$logId" else "request_rewrite_editor"
 }
@@ -88,7 +91,8 @@ fun ProwlNavHost(
         composable(ProwlRoutes.MOCKS) {
             MocksScreen(
                 onBack = { navController.popBackStack() },
-                onCreateMock = { navController.navigate(ProwlRoutes.mockEditor(null)) },
+                onCreateMock = { navController.navigate(ProwlRoutes.mockEditor()) },
+                onEditMock = { ruleId -> navController.navigate(ProwlRoutes.mockEditor(ruleId = ruleId)) },
                 onCreateRequestRewrite = { navController.navigate(ProwlRoutes.requestRewriteEditor(null)) },
             )
         }
@@ -98,13 +102,20 @@ fun ProwlNavHost(
                 navArgument("logId") {
                     type = NavType.StringType
                     nullable = true
-                    defaultValue = null
+                    defaultValue = ""
+                },
+                navArgument("ruleId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = ""
                 },
             ),
         ) { entry ->
-            val logId = parseUuidOrNull(entry.arguments?.getString("logId"))
+            val logId = parseUuidOrNull(entry.arguments?.getString("logId")?.takeIf { it.isNotBlank() })
+            val ruleId = parseUuidOrNull(entry.arguments?.getString("ruleId")?.takeIf { it.isNotBlank() })
             MockEditorScreen(
                 sourceLogId = logId,
+                ruleId = ruleId,
                 onBack = { navController.popBackStack() },
                 onSaved = { navController.popBackStack() },
             )

@@ -31,6 +31,14 @@ class MocksViewModel : ViewModel() {
         ProwlRuntime.mocker.removeAllRules()
     }
 
+    fun moveMockUp(id: UUID) {
+        ProwlRuntime.mocker.moveRuleUp(id)
+    }
+
+    fun moveMockDown(id: UUID) {
+        ProwlRuntime.mocker.moveRuleDown(id)
+    }
+
     fun setRewriteEnabled(rule: ProwlRequestRewriteRule, enabled: Boolean) {
         ProwlRuntime.requestRewriter.updateRule(rule.copy(isEnabled = enabled))
     }

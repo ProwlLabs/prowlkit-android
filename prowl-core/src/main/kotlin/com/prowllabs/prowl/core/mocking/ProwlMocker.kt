@@ -12,6 +12,8 @@ data class ProwlMockRule(
     val mockStatusCode: Int = 200,
     val mockBody: ByteArray = ByteArray(0),
     val mockHeaders: Map<String, String> = mapOf("Content-Type" to "application/json"),
+    /** Artificial latency before the mocked response is returned. */
+    val responseDelayMillis: Long = 0,
     val isEnabled: Boolean = true,
 ) {
     val mockBodyText: String
@@ -26,6 +28,7 @@ data class ProwlMockRule(
             mockStatusCode == other.mockStatusCode &&
             mockBody.contentEquals(other.mockBody) &&
             mockHeaders == other.mockHeaders &&
+            responseDelayMillis == other.responseDelayMillis &&
             isEnabled == other.isEnabled
     }
 
@@ -36,6 +39,7 @@ data class ProwlMockRule(
         result = 31 * result + mockStatusCode
         result = 31 * result + mockBody.contentHashCode()
         result = 31 * result + mockHeaders.hashCode()
+        result = 31 * result + responseDelayMillis.hashCode()
         result = 31 * result + isEnabled.hashCode()
         return result
     }
@@ -48,16 +52,60 @@ class ProwlMocker {
     val rulesFlow: StateFlow<List<ProwlMockRule>> = _rulesFlow.asStateFlow()
 
     fun addRule(rule: ProwlMockRule) {
-        synchronized(lock) { rules.add(rule) }
-        notifyChanged()
+        saveRule(rule)
     }
 
     fun updateRule(rule: ProwlMockRule) {
+        saveRule(rule)
+    }
+
+    /**
+     * Saves a rule by id. When URL pattern + method match an existing rule, that rule is
+     * overwritten instead of creating a duplicate.
+     */
+    fun saveRule(rule: ProwlMockRule) {
         synchronized(lock) {
-            val index = rules.indexOfFirst { it.id == rule.id }
-            if (index >= 0) rules[index] = rule
+            val byIdIndex = rules.indexOfFirst { it.id == rule.id }
+            val byKeyIndex = rules.indexOfFirst { hasSameMatchKey(it, rule) && it.id != rule.id }
+
+            when {
+                byIdIndex >= 0 -> {
+                    if (byKeyIndex >= 0) rules.removeAt(byKeyIndex)
+                    rules[byIdIndex] = rule
+                }
+                byKeyIndex >= 0 -> {
+                    rules[byKeyIndex] = rule.copy(id = rules[byKeyIndex].id)
+                }
+                else -> rules.add(rule)
+            }
         }
         notifyChanged()
+    }
+
+    fun moveRuleUp(id: UUID) {
+        synchronized(lock) {
+            val index = rules.indexOfFirst { it.id == id }
+            if (index > 0) {
+                val rule = rules.removeAt(index)
+                rules.add(index - 1, rule)
+            }
+        }
+        notifyChanged()
+    }
+
+    fun moveRuleDown(id: UUID) {
+        synchronized(lock) {
+            val index = rules.indexOfFirst { it.id == id }
+            if (index >= 0 && index < rules.lastIndex) {
+                val rule = rules.removeAt(index)
+                rules.add(index + 1, rule)
+            }
+        }
+        notifyChanged()
+    }
+
+    fun rule(id: UUID): ProwlMockRule? = synchronized(lock) {
+        rules.firstOrNull { it.id == id }
     }
 
     fun removeRule(id: UUID) {
@@ -108,5 +156,9 @@ class ProwlMocker {
 
     companion object {
         val shared = ProwlMocker()
+
+        internal fun hasSameMatchKey(a: ProwlMockRule, b: ProwlMockRule): Boolean =
+            a.targetUrlPattern.equals(b.targetUrlPattern, ignoreCase = true) &&
+                a.targetMethod.equals(b.targetMethod, ignoreCase = true)
     }
 }

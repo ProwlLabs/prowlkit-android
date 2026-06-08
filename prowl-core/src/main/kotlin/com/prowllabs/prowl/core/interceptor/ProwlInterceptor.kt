@@ -56,11 +56,13 @@ class ProwlInterceptor : Interceptor {
 
         val effectiveUrl = request.url.toString()
         val mockRule = ProwlRuntime.mocker.findMatch(effectiveUrl, request.method)
+        val responseWasMocked = mockRule != null
 
         val response: Response
         val networkError: String?
         try {
             response = if (mockRule != null) {
+                applyMockDelay(mockRule.responseDelayMillis)
                 buildMockResponse(request, mockRule)
             } else {
                 chain.proceed(request)
@@ -139,6 +141,7 @@ class ProwlInterceptor : Interceptor {
             requestMultipartParts = requestParts,
             responseMultipartParts = responseParts,
             requestRewritten = requestWasRewritten,
+            responseMocked = responseWasMocked,
         )
 
         val finalLog = provisionalLog.copy(
@@ -230,6 +233,13 @@ class ProwlInterceptor : Interceptor {
     private fun peekResponseBody(response: Response): ByteArray? =
         runCatching { response.peekBody(MAX_PEEK_BYTES).bytes() }.getOrNull()
 
+    private fun applyMockDelay(delayMillis: Long) {
+        val delay = delayMillis.coerceIn(0, MAX_MOCK_DELAY_MS)
+        if (delay > 0) {
+            Thread.sleep(delay)
+        }
+    }
+
     private fun buildMockResponse(request: Request, rule: com.prowllabs.prowl.core.mocking.ProwlMockRule): Response {
         val statusCode = rule.mockStatusCode.coerceIn(100, 599)
         val mediaType = rule.mockHeaders["Content-Type"]?.toMediaTypeOrNull()
@@ -273,6 +283,7 @@ class ProwlInterceptor : Interceptor {
     companion object {
         private const val MAX_PEEK_BYTES = 2L * 1024L * 1024L
         private const val MAX_CAPTURE_BYTES = 2L * 1024L * 1024L
+        private const val MAX_MOCK_DELAY_MS = 60_000L
     }
 
     private fun maybeMaskHeaders(headers: Map<String, String>): Map<String, String> =

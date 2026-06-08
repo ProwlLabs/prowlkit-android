@@ -69,6 +69,9 @@ fun ProwlLogRow(
                     if (isWatched) {
                         WatchBadge()
                     }
+                    if (log.responseMocked) {
+                        MockBadge()
+                    }
                     if (log.requestRewritten) {
                         RewriteBadge()
                     }
@@ -163,6 +166,20 @@ fun ProwlMethodCapsule(
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
+    )
+}
+
+@Composable
+private fun MockBadge() {
+    Text(
+        text = stringResource(R.string.prowl_mock_badge),
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(ProwlColors.JsonLiteral.copy(alpha = 0.18f))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        color = ProwlColors.JsonLiteral,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
     )
 }
 

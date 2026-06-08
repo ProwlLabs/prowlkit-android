@@ -30,45 +30,57 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import com.prowllabs.prowl.ui.R
 import com.prowllabs.prowl.core.formatting.ProwlLogFormatter
-import com.prowllabs.prowl.core.util.BodyDecoder
 import com.prowllabs.prowl.core.mocking.ProwlMockRule
 import com.prowllabs.prowl.core.model.NetworkLog
 import com.prowllabs.prowl.core.runtime.ProwlRuntime
+import com.prowllabs.prowl.ui.R
+import com.prowllabs.prowl.core.util.BodyDecoder
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MockEditorSheetContent(
     sourceLog: NetworkLog?,
+    existingRule: ProwlMockRule? = null,
     onSaved: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var urlPattern by remember(sourceLog) {
+    val isEditing = existingRule != null
+
+    var urlPattern by remember(sourceLog, existingRule) {
         mutableStateOf(
-            sourceLog?.url?.let { url ->
-                runCatching {
-                    val path = java.net.URI(url).path
-                    path.ifEmpty { "/" }
-                }.getOrElse { url }
-            }.orEmpty(),
+            existingRule?.targetUrlPattern
+                ?: sourceLog?.url?.let { url ->
+                    runCatching {
+                        val path = java.net.URI(url).path
+                        path.ifEmpty { "/" }
+                    }.getOrElse { url }
+                }.orEmpty(),
         )
     }
-    var method by remember(sourceLog) { mutableStateOf(sourceLog?.method ?: "GET") }
-    var statusCode by remember(sourceLog) {
-        mutableStateOf((sourceLog?.statusCode ?: 200).toString())
+    var method by remember(sourceLog, existingRule) {
+        mutableStateOf(existingRule?.targetMethod ?: sourceLog?.method ?: "GET")
     }
-    var body by remember(sourceLog) {
+    var statusCode by remember(sourceLog, existingRule) {
         mutableStateOf(
-            sourceLog?.responseBody?.let { responseBody ->
-                val raw = BodyDecoder.toText(responseBody.data, responseBody.contentType)
-                if (raw.isBlank()) {
-                    ProwlLogFormatter.prettyBodyText(responseBody)
-                } else {
-                    runCatching { ProwlLogFormatter.prettyBodyText(responseBody) }.getOrDefault(raw)
-                }
-            }.orEmpty(),
+            (existingRule?.mockStatusCode ?: sourceLog?.statusCode ?: 200).toString(),
+        )
+    }
+    var delayMillis by remember(sourceLog, existingRule) {
+        mutableStateOf((existingRule?.responseDelayMillis ?: 0L).toString())
+    }
+    var body by remember(sourceLog, existingRule) {
+        mutableStateOf(
+            existingRule?.mockBodyText
+                ?: sourceLog?.responseBody?.let { responseBody ->
+                    val raw = BodyDecoder.toText(responseBody.data, responseBody.contentType)
+                    if (raw.isBlank()) {
+                        ProwlLogFormatter.prettyBodyText(responseBody)
+                    } else {
+                        runCatching { ProwlLogFormatter.prettyBodyText(responseBody) }.getOrDefault(raw)
+                    }
+                }.orEmpty(),
         )
     }
 
@@ -79,11 +91,18 @@ fun MockEditorSheetContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = stringResource(R.string.prowl_mock_create_title),
+            text = stringResource(
+                if (isEditing) R.string.prowl_mock_edit_title else R.string.prowl_mock_create_title,
+            ),
             style = MaterialTheme.typography.titleLarge,
         )
         Text(
             text = stringResource(R.string.prowl_mock_create_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = stringResource(R.string.prowl_mock_priority_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -113,6 +132,15 @@ fun MockEditorSheetContent(
             )
         }
         OutlinedTextField(
+            value = delayMillis,
+            onValueChange = { delayMillis = it.filter(Char::isDigit) },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.prowl_mock_response_delay)) },
+            placeholder = { Text("0") },
+            supportingText = { Text(stringResource(R.string.prowl_mock_response_delay_hint)) },
+            singleLine = true,
+        )
+        OutlinedTextField(
             value = body,
             onValueChange = { body = it },
             modifier = Modifier.fillMaxWidth(),
@@ -123,13 +151,17 @@ fun MockEditorSheetContent(
         Button(
             onClick = {
                 val rule = ProwlMockRule(
+                    id = existingRule?.id ?: UUID.randomUUID(),
                     targetUrlPattern = urlPattern.trim(),
                     targetMethod = method.trim().ifBlank { "ANY" },
                     mockStatusCode = statusCode.toIntOrNull()?.coerceIn(100, 599) ?: 200,
                     mockBody = body.toByteArray(Charsets.UTF_8),
-                    mockHeaders = mapOf("Content-Type" to "application/json; charset=utf-8"),
+                    mockHeaders = existingRule?.mockHeaders
+                        ?: mapOf("Content-Type" to "application/json; charset=utf-8"),
+                    responseDelayMillis = delayMillis.toLongOrNull()?.coerceIn(0, 60_000) ?: 0L,
+                    isEnabled = existingRule?.isEnabled ?: true,
                 )
-                ProwlRuntime.mocker.addRule(rule)
+                ProwlRuntime.mocker.saveRule(rule)
                 onSaved()
             },
             modifier = Modifier.fillMaxWidth(),
@@ -144,16 +176,29 @@ fun MockEditorSheetContent(
 @Composable
 fun MockEditorScreen(
     sourceLogId: UUID?,
+    ruleId: UUID?,
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
     val logs by ProwlRuntime.storage.logsFlow.collectAsState()
+    val mockRules by ProwlRuntime.mocker.rulesFlow.collectAsState()
     val sourceLog = sourceLogId?.let { id -> logs.firstOrNull { it.id == id } }
+    val existingRule = ruleId?.let { id -> mockRules.firstOrNull { it.id == id } }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.prowl_mock_create_title)) },
+                title = {
+                    Text(
+                        stringResource(
+                            if (existingRule != null) {
+                                R.string.prowl_mock_edit_title
+                            } else {
+                                R.string.prowl_mock_create_title
+                            },
+                        ),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -167,6 +212,7 @@ fun MockEditorScreen(
     ) { padding ->
         MockEditorSheetContent(
             sourceLog = sourceLog,
+            existingRule = existingRule,
             onSaved = onSaved,
             modifier = Modifier
                 .fillMaxSize()

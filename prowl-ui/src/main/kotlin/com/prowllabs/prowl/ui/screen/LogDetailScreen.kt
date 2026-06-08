@@ -275,6 +275,18 @@ private fun InfoTab(log: NetworkLog, onCopy: (String) -> Unit) {
     val context = LocalContext.current
 
     ProwlSectionCard(title = stringResource(R.string.prowl_section_endpoint)) {
+        if (log.responseMocked) {
+            Text(
+                text = stringResource(R.string.prowl_response_was_mocked),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(ProwlColors.JsonLiteral.copy(alpha = 0.12f))
+                    .padding(10.dp),
+                fontSize = 12.sp,
+                color = ProwlColors.JsonLiteral,
+            )
+        }
         if (log.requestRewritten) {
             Text(
                 text = stringResource(R.string.prowl_request_was_rewritten),

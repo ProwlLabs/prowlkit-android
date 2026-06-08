@@ -17,6 +17,7 @@ on:
         options:
           - github
           - maven-central
+          - all
 
 jobs:
   publish:
@@ -32,10 +33,24 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Resolve version
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${RELEASE_TAG:-$INPUT_VERSION}"
+          VERSION="${VERSION#v}"
+          echo "value=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Write publish.properties
         env:
-          VERSION: ${{ github.event.release.tag_name || inputs.version }}
+          VERSION: ${{ steps.version.outputs.value }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
@@ -43,7 +58,6 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: |
-          VERSION="${VERSION#v}"
           cat > publish.properties <<EOF
           GROUP=io.github.prowllabs
           VERSION=${VERSION}
@@ -53,12 +67,26 @@ jobs:
           MAVEN_CENTRAL_PASSWORD=${MAVEN_CENTRAL_PASSWORD}
           SIGNING_KEY=${SIGNING_KEY}
           SIGNING_PASSWORD=${SIGNING_PASSWORD}
+          POM_URL=https://github.com/ProwlLabs/prowlkit-android
+          POM_SCM_URL=https://github.com/ProwlLabs/prowlkit-android
+          POM_SCM_CONNECTION=scm:git:git://github.com/ProwlLabs/prowlkit-android.git
+          POM_SCM_DEV_CONNECTION=scm:git:ssh://git@github.com/ProwlLabs/prowlkit-android.git
+          POM_LICENSE_NAME=MIT License
+          POM_LICENSE_URL=https://opensource.org/licenses/MIT
+          POM_DEVELOPER_ID=prowllabs
+          POM_DEVELOPER_NAME=ProwlLabs
           EOF
 
+      - name: Run tests
+        run: ./gradlew :prowl-core:testDebugUnitTest --no-daemon
+
       - name: Publish to GitHub Packages
-        if: github.event_name == 'release' || inputs.target == 'github'
+        if: >
+          github.event_name == 'release' ||
+          inputs.target == 'github' ||
+          inputs.target == 'all'
         run: ./gradlew publishAllToGitHubPackages --no-daemon
 
       - name: Publish to Maven Central
-        if: inputs.target == 'maven-central'
+        if: inputs.target == 'maven-central' || inputs.target == 'all'
         run: ./gradlew publishAllToMavenCentral --no-daemon

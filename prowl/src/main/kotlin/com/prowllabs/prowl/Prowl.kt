@@ -68,9 +68,11 @@ object Prowl {
 
     fun mockRules(): List<ProwlMockRule> = ProwlRuntime.mocker.allRules()
 
-    fun addMockRule(rule: ProwlMockRule) = ProwlRuntime.mocker.addRule(rule)
+    fun addMockRule(rule: ProwlMockRule) = ProwlRuntime.mocker.saveRule(rule)
 
-    fun updateMockRule(rule: ProwlMockRule) = ProwlRuntime.mocker.updateRule(rule)
+    fun updateMockRule(rule: ProwlMockRule) = ProwlRuntime.mocker.saveRule(rule)
+
+    fun saveMockRule(rule: ProwlMockRule) = ProwlRuntime.mocker.saveRule(rule)
 
     fun removeMockRule(id: UUID) = ProwlRuntime.mocker.removeRule(id)
 

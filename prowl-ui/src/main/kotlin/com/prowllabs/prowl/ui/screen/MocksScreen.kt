@@ -1,6 +1,7 @@
 package com.prowllabs.prowl.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -48,12 +51,14 @@ import com.prowllabs.prowl.core.mocking.ProwlRequestRewriteRule
 import com.prowllabs.prowl.ui.R
 import com.prowllabs.prowl.ui.components.ProwlMethodBadge
 import com.prowllabs.prowl.ui.viewmodel.MocksViewModel
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MocksScreen(
     onBack: () -> Unit,
     onCreateMock: () -> Unit,
+    onEditMock: (UUID) -> Unit,
     onCreateRequestRewrite: () -> Unit,
     viewModel: MocksViewModel = viewModel(),
 ) {
@@ -156,15 +161,28 @@ fun MocksScreen(
                     )
                 }
             } else if (isResponseTab) {
+                Text(
+                    text = stringResource(R.string.prowl_mock_priority_hint),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    items(mockRules, key = { it.id }) { rule ->
+                    items(mockRules.size, key = { mockRules[it].id }) { index ->
+                        val rule = mockRules[index]
                         MockRuleRow(
                             rule = rule,
+                            priority = index + 1,
+                            canMoveUp = index > 0,
+                            canMoveDown = index < mockRules.lastIndex,
+                            onEdit = { onEditMock(rule.id) },
+                            onMoveUp = { viewModel.moveMockUp(rule.id) },
+                            onMoveDown = { viewModel.moveMockDown(rule.id) },
                             onToggle = { enabled -> viewModel.setMockEnabled(rule, enabled) },
                             onDelete = { viewModel.deleteMock(rule.id) },
                         )
@@ -193,6 +211,12 @@ fun MocksScreen(
 @Composable
 private fun MockRuleRow(
     rule: ProwlMockRule,
+    priority: Int,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onEdit: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -201,10 +225,20 @@ private fun MockRuleRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
+            .clickable(onClick = onEdit)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.prowl_mock_priority_badge, priority),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
             ProwlMethodBadge(method = rule.targetMethod)
             Text(
                 text = rule.mockStatusCode.toString(),
@@ -217,11 +251,37 @@ private fun MockRuleRow(
             fontFamily = FontFamily.Monospace,
             fontSize = 13.sp,
         )
-        RuleToggleRow(
-            enabled = rule.isEnabled,
-            onToggle = onToggle,
-            onDelete = onDelete,
-        )
+        if (rule.responseDelayMillis > 0) {
+            Text(
+                text = stringResource(R.string.prowl_mock_delay_value, rule.responseDelayMillis),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            RuleToggleRow(
+                enabled = rule.isEnabled,
+                onToggle = onToggle,
+                onDelete = onDelete,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onMoveUp, enabled = canMoveUp) {
+                Icon(
+                    Icons.Outlined.KeyboardArrowUp,
+                    contentDescription = stringResource(R.string.prowl_mock_move_up),
+                )
+            }
+            IconButton(onClick = onMoveDown, enabled = canMoveDown) {
+                Icon(
+                    Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = stringResource(R.string.prowl_mock_move_down),
+                )
+            }
+        }
     }
 }
 
@@ -281,11 +341,12 @@ private fun RuleToggleRow(
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
     onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = enabled, onCheckedChange = onToggle)

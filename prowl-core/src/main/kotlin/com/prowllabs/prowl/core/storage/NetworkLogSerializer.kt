@@ -54,6 +54,7 @@ internal object NetworkLogSerializer {
             put("responseMultipartParts", multipartToJson(log.responseMultipartParts))
         }
         put("requestRewritten", log.requestRewritten)
+        put("responseMocked", log.responseMocked)
     }
 
     private fun fromJsonObject(obj: JSONObject): NetworkLog = NetworkLog(
@@ -79,6 +80,7 @@ internal object NetworkLogSerializer {
         requestMultipartParts = obj.optJSONArray("requestMultipartParts")?.let(::multipartFromJson).orEmpty(),
         responseMultipartParts = obj.optJSONArray("responseMultipartParts")?.let(::multipartFromJson).orEmpty(),
         requestRewritten = obj.optBoolean("requestRewritten"),
+        responseMocked = obj.optBoolean("responseMocked"),
     )
 
     private fun bodyToJson(body: NetworkLog.Body): JSONObject = JSONObject().apply {

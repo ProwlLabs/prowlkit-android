@@ -5,7 +5,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ProwlLabs/prowlkit-android/releases/latest"><img alt="Version" src="https://img.shields.io/github/v/tag/ProwlLabs/prowlkit-android?label=version&sort=semver"></a>
+  <a href="https://central.sonatype.com/artifact/io.github.prowllabs/prowl"><img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.prowllabs/prowl?label=Maven%20Central&color=0A7ABF&logo=apachemaven"></a>
+  <a href="https://github.com/ProwlLabs/prowlkit-android/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/ProwlLabs/prowlkit-android?label=release&display_name=tag"></a>
+  <a href="https://github.com/ProwlLabs/prowlkit-android/packages"><img alt="GitHub Packages" src="https://img.shields.io/badge/GitHub%20Packages-io.github.prowllabs-24292e?logo=github"></a>
+  <a href="https://github.com/ProwlLabs/prowlkit-android/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ProwlLabs/prowlkit-android/ci.yml?branch=main&label=ci"></a>
   <a href="https://github.com/ProwlLabs/prowlkit-android/actions/workflows/publish.yml"><img alt="Publish" src="https://img.shields.io/github/actions/workflow/status/ProwlLabs/prowlkit-android/publish.yml?branch=main&label=publish"></a>
   <img alt="Android" src="https://img.shields.io/badge/Android-7.0%2B%20(API%2024)-3DDC84">
   <img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.0-7F52FF">
@@ -57,17 +60,28 @@ ProwlKit Android is inspired by [Chucker](https://github.com/ChuckerTeam/chucker
 
 Add the repository, then depend on the facade artifact `prowl` (pulls in `prowl-core` + `prowl-ui`).
 
+> **Version:** use the **Maven Central** or **release** badge at the top of this README (they update automatically after each publish).
+
 ### Maven Central
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.prowllabs:prowl:0.1.0")
+    // Replace VERSION with the Maven Central badge (e.g. 0.1.0)
+    debugImplementation("io.github.prowllabs:prowl:VERSION")
 }
 ```
 
 > Use `debugImplementation` in production apps so the inspector never ships to release builds.
 
+Optional gRPC module:
+
+```kotlin
+debugImplementation("io.github.prowllabs:prowl-grpc:VERSION")
+```
+
 ### GitHub Packages
+
+Published artifacts: [github.com/ProwlLabs/prowlkit-android/packages](https://github.com/ProwlLabs/prowlkit-android/packages)
 
 ```kotlin
 // settings.gradle.kts
@@ -87,7 +101,8 @@ dependencyResolutionManagement {
 
 // app/build.gradle.kts
 dependencies {
-    debugImplementation("io.github.prowllabs:prowl:0.1.0")
+    // Replace VERSION with the release badge (e.g. 0.1.0)
+    debugImplementation("io.github.prowllabs:prowl:VERSION")
 }
 ```
 
@@ -329,9 +344,8 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 
 ## Publish (Maintainers)
 
-1. Copy `publish.properties.example` → `publish.properties` and fill credentials.
-2. Bump `VERSION` in `gradle.properties`.
-3. Publish:
+1. Bump `VERSION` in `gradle.properties`.
+2. For local publish, copy `publish.properties.example` → `publish.properties` and fill credentials.
 
 ```bash
 ./gradlew publishAllToMavenLocal          # ~/.m2/repository
@@ -339,13 +353,35 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 ./gradlew publishAllToMavenCentral        # needs Sonatype + signing keys
 ```
 
-CI workflow `.github/workflows/publish.yml` runs on GitHub **Release published** (tag → version, strips leading `v`).
+### GitHub Packages (first publish)
+
+Packages appear under **Packages** on the repo after a successful publish workflow.
+
+**Option A — GitHub Release (recommended)**
+
+1. Push `main` with the workflow files (`.github/workflows/publish.yml`, `ci.yml`).
+2. Create a release: **Releases → Draft new release → tag `v0.1.0` → Publish release**.
+3. The **Publish** workflow runs automatically and uploads `prowl`, `prowl-core`, `prowl-ui`, and `prowl-grpc` to GitHub Packages.
+4. Open [Packages](https://github.com/ProwlLabs/prowlkit-android/packages) — artifacts should list under `io.github.prowllabs`.
+
+**Option B — Manual workflow**
+
+1. **Actions → Publish → Run workflow**
+2. Version: `0.1.0`, target: `github`
+3. Uses `GITHUB_TOKEN` automatically (no extra secret needed for the same repo).
+
+`gpr.user` / `gpr.key` in consumer apps need a PAT with `read:packages` (and `repo` for private repos).
+
+### CI & Maven Central
+
+- **CI** (`.github/workflows/ci.yml`) — unit tests on every PR / push to `main`.
+- **Publish** (`.github/workflows/publish.yml`) — on **Release published**, pushes to GitHub Packages; also pushes to Maven Central when `MAVEN_CENTRAL_*` + signing secrets are set.
 
 ### Maven Central checklist
 
 1. Namespace `io.github.prowllabs` verified at [central.sonatype.com](https://central.sonatype.com/).
 2. Add repo secrets: `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `SIGNING_KEY`, `SIGNING_PASSWORD`.
-3. Tag a release (e.g. `v0.1.0`) and publish; close + release the staging repo in the Sonatype UI.
+3. Publish via workflow (`target: maven-central` or `all`), or create a release with secrets configured; close + release the staging repo in the Sonatype UI.
 
 ## Troubleshooting
 

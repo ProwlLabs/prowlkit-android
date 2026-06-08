@@ -171,6 +171,7 @@ tasks.register("publishAllToGitHubPackages") {
         ":prowl-core:publishReleasePublicationToGitHubPackagesRepository",
         ":prowl-ui:publishReleasePublicationToGitHubPackagesRepository",
         ":prowl:publishReleasePublicationToGitHubPackagesRepository",
+        ":prowl-grpc:publishReleasePublicationToGitHubPackagesRepository",
     )
 }
 
@@ -181,5 +182,6 @@ tasks.register("publishAllToMavenCentral") {
         ":prowl-core:publishReleasePublicationToMavenCentralRepository",
         ":prowl-ui:publishReleasePublicationToMavenCentralRepository",
         ":prowl:publishReleasePublicationToMavenCentralRepository",
+        ":prowl-grpc:publishReleasePublicationToMavenCentralRepository",
     )
 }

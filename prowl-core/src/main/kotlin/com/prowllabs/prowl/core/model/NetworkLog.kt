@@ -24,6 +24,7 @@ data class NetworkLog(
     val requestMultipartParts: List<MultipartPart> = emptyList(),
     val responseMultipartParts: List<MultipartPart> = emptyList(),
     val requestRewritten: Boolean = false,
+    val responseMocked: Boolean = false,
 ) {
     data class Body(
         val data: ByteArray,

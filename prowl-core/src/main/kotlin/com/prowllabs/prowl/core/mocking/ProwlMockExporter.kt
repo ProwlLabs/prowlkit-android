@@ -33,6 +33,7 @@ object ProwlMockExporter {
         put("mockStatusCode", rule.mockStatusCode)
         put("mockBodyBase64", Base64.encodeToString(rule.mockBody, Base64.NO_WRAP))
         put("mockHeaders", JSONObject(rule.mockHeaders))
+        put("responseDelayMillis", rule.responseDelayMillis)
         put("isEnabled", rule.isEnabled)
     }
 
@@ -56,6 +57,7 @@ object ProwlMockExporter {
             mockStatusCode = obj.optInt("mockStatusCode", 200),
             mockBody = body,
             mockHeaders = headers.ifEmpty { mapOf("Content-Type" to "application/json") },
+            responseDelayMillis = obj.optLong("responseDelayMillis", 0).coerceAtLeast(0),
             isEnabled = obj.optBoolean("isEnabled", true),
         )
     }

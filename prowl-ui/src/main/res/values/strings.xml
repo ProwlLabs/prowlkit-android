@@ -93,6 +93,8 @@
     <string name="prowl_save_rewrite_rule">Save Rewrite Rule</string>
     <string name="prowl_rewrite_saved">Request rewrite rule saved</string>
     <string name="prowl_rewrite_badge">REWRITE</string>
+    <string name="prowl_mock_badge">MOCK</string>
+    <string name="prowl_response_was_mocked">Response was served by a Prowl mock rule (not from the network).</string>
     <string name="prowl_rewrite_headers_count">%1$d header overrides</string>
     <string name="prowl_request_was_rewritten">Request was rewritten by a Prowl rule before sending.</string>
     <string name="prowl_notification_channel">Prowl Inspector</string>
@@ -107,6 +109,15 @@
     <string name="prowl_mock_status">Status</string>
     <string name="prowl_mock_response_body">Response body</string>
     <string name="prowl_mock_save_rule">Save Mock Rule</string>
+    <string name="prowl_mock_edit_title">Edit Mock</string>
+    <string name="prowl_mock_response_delay">Response delay (ms)</string>
+    <string name="prowl_mock_response_delay_hint">0 = instant. Simulates network latency (max 60s).</string>
+    <string name="prowl_mock_priority_badge">#%1$d</string>
+    <string name="prowl_mock_priority_hint">Top rule wins when multiple patterns match. Same URL + method overwrites instead of duplicating.</string>
+    <string name="prowl_mock_delay_value">Delay: %1$d ms</string>
+    <string name="prowl_mock_move_up">Move up</string>
+    <string name="prowl_mock_move_down">Move down</string>
+    <string name="prowl_mock_edit">Edit mock</string>
     <string name="prowl_share_title">Share</string>
     <string name="prowl_share_json_title">Share JSON</string>
     <string name="prowl_share_json_sub">Export log as formatted JSON</string>

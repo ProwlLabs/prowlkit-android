@@ -6,12 +6,15 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import com.prowllabs.prowl.core.runtime.ProwlRuntime
 import com.prowllabs.prowl.ui.ProwlUiLauncher
 import kotlin.math.sqrt
 
 object ProwlGlobalShakeMonitor : SensorEventListener {
+    private var hostApplication: Application? = null
     private var sensorManager: SensorManager? = null
     private var accelerometer: Sensor? = null
+    private var lifecycleCallbacks: Application.ActivityLifecycleCallbacks? = null
     private var lastShakeAt = 0L
     private var foregroundActivities = 0
 
@@ -19,7 +22,7 @@ object ProwlGlobalShakeMonitor : SensorEventListener {
         if (sensorManager != null) return
         sensorManager = application.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        application.registerActivityLifecycleCallbacks(object : Application.ActivityLifecycleCallbacks {
+        val callbacks = object : Application.ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: android.app.Activity) {
                 foregroundActivities++
                 registerSensor()
@@ -35,7 +38,20 @@ object ProwlGlobalShakeMonitor : SensorEventListener {
             override fun onActivityStopped(a: android.app.Activity) = Unit
             override fun onActivitySaveInstanceState(a: android.app.Activity, b: android.os.Bundle) = Unit
             override fun onActivityDestroyed(a: android.app.Activity) = Unit
-        })
+        }
+        lifecycleCallbacks = callbacks
+        hostApplication = application
+        application.registerActivityLifecycleCallbacks(callbacks)
+    }
+
+    fun uninstall() {
+        unregisterSensor()
+        lifecycleCallbacks?.let { hostApplication?.unregisterActivityLifecycleCallbacks(it) }
+        lifecycleCallbacks = null
+        hostApplication = null
+        sensorManager = null
+        accelerometer = null
+        foregroundActivities = 0
     }
 
     private fun registerSensor() {
@@ -49,7 +65,7 @@ object ProwlGlobalShakeMonitor : SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        val context = com.prowllabs.prowl.core.runtime.ProwlRuntime.hostApplicationContext() ?: return
+        val context = ProwlRuntime.hostApplicationContext() ?: return
         val shakeToOpen = ProwlUiPreferences.isShakeToOpenEnabled(context)
         val shakeToClear = ProwlUiPreferences.isShakeToClearEnabled(context)
         if (!shakeToOpen && !shakeToClear) return
@@ -67,8 +83,8 @@ object ProwlGlobalShakeMonitor : SensorEventListener {
         if (shakeToOpen) {
             ProwlUiLauncher.show(context)
         } else if (shakeToClear) {
-            com.prowllabs.prowl.core.runtime.ProwlRuntime.storage.clearBlocking()
-            com.prowllabs.prowl.core.runtime.ProwlRuntime.onLogsCleared()
+            ProwlRuntime.storage.clearBlocking()
+            ProwlRuntime.onLogsCleared()
         }
     }
 

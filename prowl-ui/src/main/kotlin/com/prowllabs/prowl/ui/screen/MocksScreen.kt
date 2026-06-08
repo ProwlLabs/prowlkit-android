@@ -29,9 +29,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,11 +42,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.prowllabs.prowl.core.mocking.ProwlMockRule
 import com.prowllabs.prowl.core.mocking.ProwlRequestRewriteRule
-import com.prowllabs.prowl.core.runtime.ProwlRuntime
 import com.prowllabs.prowl.ui.R
 import com.prowllabs.prowl.ui.components.ProwlMethodBadge
+import com.prowllabs.prowl.ui.viewmodel.MocksViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,15 +55,11 @@ fun MocksScreen(
     onBack: () -> Unit,
     onCreateMock: () -> Unit,
     onCreateRequestRewrite: () -> Unit,
+    viewModel: MocksViewModel = viewModel(),
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    var mockRules by remember { mutableStateOf(ProwlRuntime.mocker.allRules()) }
-    var rewriteRules by remember { mutableStateOf(ProwlRuntime.requestRewriter.allRules()) }
-
-    fun refresh() {
-        mockRules = ProwlRuntime.mocker.allRules()
-        rewriteRules = ProwlRuntime.requestRewriter.allRules()
-    }
+    val mockRules by viewModel.mockRules.collectAsState()
+    val rewriteRules by viewModel.rewriteRules.collectAsState()
 
     val isResponseTab = selectedTab == 0
     val rulesEmpty = if (isResponseTab) mockRules.isEmpty() else rewriteRules.isEmpty()
@@ -81,11 +78,10 @@ fun MocksScreen(
                     if (!rulesEmpty) {
                         TextButton(onClick = {
                             if (isResponseTab) {
-                                ProwlRuntime.mocker.removeAllRules()
+                                viewModel.deleteAllMocks()
                             } else {
-                                ProwlRuntime.requestRewriter.removeAllRules()
+                                viewModel.deleteAllRewrites()
                             }
-                            refresh()
                         }) {
                             Text(stringResource(R.string.prowl_delete_all))
                         }
@@ -169,14 +165,8 @@ fun MocksScreen(
                     items(mockRules, key = { it.id }) { rule ->
                         MockRuleRow(
                             rule = rule,
-                            onToggle = { enabled ->
-                                ProwlRuntime.mocker.updateRule(rule.copy(isEnabled = enabled))
-                                refresh()
-                            },
-                            onDelete = {
-                                ProwlRuntime.mocker.removeRule(rule.id)
-                                refresh()
-                            },
+                            onToggle = { enabled -> viewModel.setMockEnabled(rule, enabled) },
+                            onDelete = { viewModel.deleteMock(rule.id) },
                         )
                     }
                 }
@@ -190,14 +180,8 @@ fun MocksScreen(
                     items(rewriteRules, key = { it.id }) { rule ->
                         RequestRewriteRuleRow(
                             rule = rule,
-                            onToggle = { enabled ->
-                                ProwlRuntime.requestRewriter.updateRule(rule.copy(isEnabled = enabled))
-                                refresh()
-                            },
-                            onDelete = {
-                                ProwlRuntime.requestRewriter.removeRule(rule.id)
-                                refresh()
-                            },
+                            onToggle = { enabled -> viewModel.setRewriteEnabled(rule, enabled) },
+                            onDelete = { viewModel.deleteRewrite(rule.id) },
                         )
                     }
                 }
@@ -271,7 +255,7 @@ private fun RequestRewriteRuleRow(
         )
         if (rule.replacementUrl.isNotBlank()) {
             Text(
-                text = "→ ${rule.replacementUrl}",
+                text = stringResource(R.string.prowl_rewrite_arrow, rule.replacementUrl),
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

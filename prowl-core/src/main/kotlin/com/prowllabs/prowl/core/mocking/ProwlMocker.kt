@@ -1,5 +1,8 @@
 package com.prowllabs.prowl.core.mocking
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.UUID
 
 data class ProwlMockRule(
@@ -41,6 +44,8 @@ data class ProwlMockRule(
 class ProwlMocker {
     private val lock = Any()
     private val rules = mutableListOf<ProwlMockRule>()
+    private val _rulesFlow = MutableStateFlow<List<ProwlMockRule>>(emptyList())
+    val rulesFlow: StateFlow<List<ProwlMockRule>> = _rulesFlow.asStateFlow()
 
     fun addRule(rule: ProwlMockRule) {
         synchronized(lock) { rules.add(rule) }
@@ -63,6 +68,7 @@ class ProwlMocker {
     fun removeAllRules() {
         synchronized(lock) { rules.clear() }
         ProwlMockPersistence.clearAsync()
+        publishRules()
     }
 
     fun replaceAllRules(newRules: List<ProwlMockRule>) {
@@ -70,21 +76,22 @@ class ProwlMocker {
             rules.clear()
             rules.addAll(newRules)
         }
+        publishRules()
     }
 
     fun allRules(): List<ProwlMockRule> = synchronized(lock) { rules.toList() }
 
     fun findMatch(url: String?, method: String): ProwlMockRule? {
         if (url.isNullOrBlank()) return null
-        val normalizedMethod = method.uppercase()
         return synchronized(lock) {
             rules.firstOrNull { rule ->
-                if (!rule.isEnabled || rule.targetUrlPattern.isEmpty()) return@firstOrNull false
-                if (!url.contains(rule.targetUrlPattern, ignoreCase = true)) return@firstOrNull false
-                if (rule.targetMethod.isNotEmpty() && rule.targetMethod.uppercase() != "ANY") {
-                    if (normalizedMethod != rule.targetMethod.uppercase()) return@firstOrNull false
-                }
-                true
+                ProwlRuleMatcher.matches(
+                    url = url,
+                    method = method,
+                    targetUrlPattern = rule.targetUrlPattern,
+                    targetMethod = rule.targetMethod,
+                    isEnabled = rule.isEnabled,
+                )
             }
         }
     }
@@ -92,6 +99,11 @@ class ProwlMocker {
     private fun notifyChanged() {
         val snapshot = allRules()
         ProwlMockPersistence.persistAsync(snapshot)
+        publishRules()
+    }
+
+    private fun publishRules() {
+        _rulesFlow.value = allRules()
     }
 
     companion object {

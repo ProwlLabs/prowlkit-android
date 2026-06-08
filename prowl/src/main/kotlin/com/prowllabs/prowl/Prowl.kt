@@ -1,6 +1,5 @@
 package com.prowllabs.prowl
 
-import android.app.Application
 import android.content.Context
 import com.prowllabs.prowl.core.interceptor.ProwlOkHttp
 import com.prowllabs.prowl.core.logging.ProwlEndpointRateAlertRule
@@ -12,46 +11,36 @@ import com.prowllabs.prowl.core.mocking.ProwlRequestRewriteRule
 import com.prowllabs.prowl.core.mocking.ProwlRequestRewriter
 import com.prowllabs.prowl.core.runtime.ProwlRuntime
 import com.prowllabs.prowl.core.storage.ProwlStorage
-import com.prowllabs.prowl.ui.ProwlNotification
+import com.prowllabs.prowl.core.websocket.ProwlWebSocket
 import com.prowllabs.prowl.ui.ProwlUiLauncher
-import com.prowllabs.prowl.ui.util.ProwlFloatingBubble
-import com.prowllabs.prowl.ui.util.ProwlGlobalShakeMonitor
+import com.prowllabs.prowl.ui.ProwlUiLifecycle
 import com.prowllabs.prowl.ui.util.ProwlUiPreferences
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import com.prowllabs.prowl.core.websocket.ProwlWebSocket
 import java.util.UUID
 
 /**
  * Main entry point for ProwlKit on Android.
- *
- * ```kotlin
- * class DemoApp : Application() {
- *     override fun onCreate() {
- *         super.onCreate()
- *         Prowl.start(this)
- *     }
- * }
- *
- * val client = OkHttpClient.Builder()
- *     .applyProwl()
- *     .build()
- * ```
  */
 object Prowl {
+    @Volatile
     private var isRunning = false
+
     private var appContext: Context? = null
 
     val interceptor: Interceptor = ProwlOkHttp.interceptor
 
-    var ignoredUrls: MutableSet<String>
+    val isActive: Boolean
+        get() = isRunning
+
+    var ignoredUrls: Set<String>
         get() = ProwlRuntime.ignoredUrls
         set(value) { ProwlRuntime.ignoredUrls = value }
 
-    var ignoredUrlRegexes: MutableSet<String>
+    var ignoredUrlRegexes: Set<String>
         get() = ProwlRuntime.ignoredUrlRegexes
         set(value) { ProwlRuntime.ignoredUrlRegexes = value }
 
@@ -115,11 +104,11 @@ object Prowl {
     }
 
     fun ignoreUrl(urlSubstring: String) {
-        ProwlRuntime.ignoredUrls.add(urlSubstring)
+        ProwlRuntime.addIgnoredUrl(urlSubstring)
     }
 
     fun ignoreUrlRegex(pattern: String) {
-        ProwlRuntime.ignoredUrlRegexes.add(pattern)
+        ProwlRuntime.addIgnoredUrlRegex(pattern)
     }
 
     fun configure(
@@ -139,30 +128,25 @@ object Prowl {
     ) {
         if (isRunning) return
 
-        val appContext = context.applicationContext
-        this.appContext = appContext
-        ProwlRuntime.setHostApplicationContext(appContext)
+        val applicationContext = context.applicationContext
+        appContext = applicationContext
+        ProwlRuntime.setHostApplicationContext(applicationContext)
         ProwlRuntime.restorePersistedMocks()
         ProwlRuntime.restorePersistedRequestRewrites()
         ProwlRuntime.isSessionPersistenceEnabled =
-            ProwlUiPreferences.isSessionPersistenceEnabled(appContext)
+            ProwlUiPreferences.isSessionPersistenceEnabled(applicationContext)
         ProwlRuntime.restorePersistedSession()
-        if (appContext is Application) {
-            ProwlGlobalShakeMonitor.install(appContext)
-            ProwlFloatingBubble.install(appContext)
-        }
         ignoredUrls.forEach(::ignoreUrl)
         ignoredUrlRegexes.forEach(::ignoreUrlRegex)
 
-        if (showNotification) {
-            ProwlNotification.show(appContext)
-        }
+        ProwlUiLifecycle.install(applicationContext, showNotification)
         isRunning = true
     }
 
     fun stop() {
         if (!isRunning) return
-        appContext?.let { ProwlNotification.dismiss(it) }
+        appContext?.let { ProwlUiLifecycle.uninstall(it) }
+        appContext = null
         isRunning = false
     }
 
@@ -171,15 +155,19 @@ object Prowl {
     }
 
     fun hide() {
-        // Activity-based UI; user closes via back/close button.
+        ProwlUiLifecycle.hideInspector()
     }
 
     fun toggle() {
-        show()
+        if (ProwlUiLifecycle.isInspectorVisible()) {
+            hide()
+        } else {
+            show()
+        }
     }
 }
 
-fun okhttp3.OkHttpClient.Builder.applyProwl(): okhttp3.OkHttpClient.Builder =
+fun OkHttpClient.Builder.applyProwl(): OkHttpClient.Builder =
     com.prowllabs.prowl.core.interceptor.ProwlOkHttp.run { applyProwl() }
 
 fun OkHttpClient.newProwlWebSocket(request: Request, listener: WebSocketListener): WebSocket =

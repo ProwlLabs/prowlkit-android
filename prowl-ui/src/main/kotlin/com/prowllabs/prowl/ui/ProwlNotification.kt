@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -52,12 +51,13 @@ object ProwlNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val requestLabel = if (count == 1) "Captured request" else "Captured requests"
-        val largeIcon = BitmapFactory.decodeResource(context.resources, R.drawable.prowl_kit)
+        val requestLabel = context.getString(
+            if (count == 1) R.string.prowl_notification_requests_one
+            else R.string.prowl_notification_requests_many,
+        )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.prowl_kit)
-            .setLargeIcon(largeIcon)
-            .setContentTitle("Prowl")
+            .setSmallIcon(R.drawable.ic_prowl_notification)
+            .setContentTitle(context.getString(R.string.prowl_title))
             .setContentText("$count $requestLabel")
             .setContentIntent(pendingIntent)
             .setOngoing(true)
@@ -71,7 +71,7 @@ object ProwlNotification {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Prowl Inspector",
+            context.getString(R.string.prowl_notification_channel),
             NotificationManager.IMPORTANCE_LOW,
         )
         val manager = context.getSystemService(NotificationManager::class.java)

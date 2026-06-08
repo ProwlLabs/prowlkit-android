@@ -50,7 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.prowllabs.prowl.core.formatting.ProwlLogFormatter
 import com.prowllabs.prowl.core.model.NetworkLog
-import com.prowllabs.prowl.core.runtime.ProwlRuntime
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.prowllabs.prowl.ui.viewmodel.LogDetailViewModel
 import com.prowllabs.prowl.ui.components.ProwlCapsuleTabBar
 import com.prowllabs.prowl.ui.components.ProwlCopyToast
 import com.prowllabs.prowl.ui.components.ProwlFooterCredit
@@ -78,8 +79,9 @@ import kotlinx.coroutines.delay
 fun LogDetailScreen(
     logId: UUID,
     onBack: () -> Unit,
+    viewModel: LogDetailViewModel = viewModel(),
 ) {
-    val logs by ProwlRuntime.storage.logsFlow.collectAsState()
+    val logs by viewModel.logs.collectAsState()
     val log = logs.firstOrNull { it.id == logId }
     val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -272,7 +274,7 @@ private fun MockEditorBottomSheet(
 private fun InfoTab(log: NetworkLog, onCopy: (String) -> Unit) {
     val context = LocalContext.current
 
-    ProwlSectionCard(title = "Endpoint") {
+    ProwlSectionCard(title = stringResource(R.string.prowl_section_endpoint)) {
         if (log.requestRewritten) {
             Text(
                 text = stringResource(R.string.prowl_request_was_rewritten),
@@ -287,7 +289,7 @@ private fun InfoTab(log: NetworkLog, onCopy: (String) -> Unit) {
         }
         if (log.endpointRateAlertTriggered) {
             Text(
-                text = "⚡ Endpoint rate threshold reached for this request.",
+                text = "⚡ ${stringResource(R.string.prowl_rate_alert_detail)}",
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
@@ -298,20 +300,22 @@ private fun InfoTab(log: NetworkLog, onCopy: (String) -> Unit) {
             )
         }
         ProwlLabeledValue(
-            label = "URL",
+            label = stringResource(R.string.prowl_label_url),
             value = log.url.orEmpty().ifBlank { "-" },
             onCopy = {
-                copyToClipboard(context, "URL", log.url.orEmpty())
-                onCopy("URL")
+                val label = context.getString(R.string.prowl_label_url)
+                copyToClipboard(context, label, log.url.orEmpty())
+                onCopy(label)
             },
         )
         log.hostIp?.let { ip ->
             ProwlLabeledValue(
-                label = "Host IP",
+                label = stringResource(R.string.prowl_host_ip),
                 value = ip,
                 onCopy = {
-                    copyToClipboard(context, "Host IP", ip)
-                    onCopy("Host IP")
+                    val label = context.getString(R.string.prowl_host_ip)
+                    copyToClipboard(context, label, ip)
+                    onCopy(label)
                 },
             )
         }
@@ -321,12 +325,14 @@ private fun InfoTab(log: NetworkLog, onCopy: (String) -> Unit) {
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ProwlMethodCapsule(method = log.method) {
-                copyToClipboard(context, "Method", log.method)
-                onCopy("Method")
+                val label = context.getString(R.string.prowl_label_method)
+                copyToClipboard(context, label, log.method)
+                onCopy(label)
             }
             ProwlStatusCapsule(statusCode = log.statusCode) {
-                copyToClipboard(context, "Status", log.statusCode?.toString() ?: "No response")
-                onCopy("Status")
+                val label = context.getString(R.string.prowl_label_status)
+                copyToClipboard(context, label, log.statusCode?.toString() ?: context.getString(R.string.prowl_no_response))
+                onCopy(label)
             }
         }
         log.errorDescription?.let { error ->
@@ -335,58 +341,64 @@ private fun InfoTab(log: NetworkLog, onCopy: (String) -> Unit) {
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
             )
             ProwlLabeledValue(
-                label = "Error",
+                label = stringResource(R.string.prowl_label_error),
                 value = error,
                 valueColor = MaterialTheme.colorScheme.error,
                 onCopy = {
-                    copyToClipboard(context, "Error", error)
-                    onCopy("Error")
+                    val label = context.getString(R.string.prowl_label_error)
+                    copyToClipboard(context, label, error)
+                    onCopy(label)
                 },
             )
         }
     }
 
-    ProwlSectionCard(title = "Timing") {
+    ProwlSectionCard(title = stringResource(R.string.prowl_timing)) {
         ProwlLabeledValue(
-            label = "Request date",
+            label = stringResource(R.string.prowl_label_request_date),
             value = log.formattedStartedAt(),
             onCopy = {
-                copyToClipboard(context, "Request date", log.formattedStartedAt())
-                onCopy("Request date")
+                val label = context.getString(R.string.prowl_label_request_date)
+                copyToClipboard(context, label, log.formattedStartedAt())
+                onCopy(label)
             },
         )
         if (log.statusCode != null) {
             ProwlLabeledValue(
-                label = "Response date",
+                label = stringResource(R.string.prowl_label_response_date),
                 value = log.formattedResponseAt(),
                 onCopy = {
-                    copyToClipboard(context, "Response date", log.formattedResponseAt())
-                    onCopy("Response date")
+                    val label = context.getString(R.string.prowl_label_response_date)
+                    copyToClipboard(context, label, log.formattedResponseAt())
+                    onCopy(label)
                 },
             )
             ProwlLabeledValue(
-                label = "Time interval",
+                label = stringResource(R.string.prowl_label_time_interval),
                 value = log.formattedDurationSeconds(),
                 onCopy = {
-                    copyToClipboard(context, "Time interval", log.formattedDurationSeconds())
-                    onCopy("Time interval")
+                    val label = context.getString(R.string.prowl_label_time_interval)
+                    copyToClipboard(context, label, log.formattedDurationSeconds())
+                    onCopy(label)
                 },
             )
         }
         ProwlLabeledValue(
-            label = "Timeout",
+            label = stringResource(R.string.prowl_label_timeout),
             value = log.timeoutMillis?.toString() ?: "-",
             onCopy = {
-                copyToClipboard(context, "Timeout", log.timeoutMillis?.toString() ?: "-")
-                onCopy("Timeout")
+                val label = context.getString(R.string.prowl_label_timeout)
+                copyToClipboard(context, label, log.timeoutMillis?.toString() ?: "-")
+                onCopy(label)
             },
         )
         ProwlLabeledValue(
-            label = "Cache policy",
+            label = stringResource(R.string.prowl_label_cache_policy),
             value = log.cachePolicy ?: "-",
             onCopy = {
-                copyToClipboard(context, "Cache policy", log.cachePolicy ?: "-")
-                onCopy("Cache policy")
+                val label = context.getString(R.string.prowl_label_cache_policy)
+                copyToClipboard(context, label, log.cachePolicy ?: "-")
+                onCopy(label)
             },
         )
         log.timing?.let { timing ->

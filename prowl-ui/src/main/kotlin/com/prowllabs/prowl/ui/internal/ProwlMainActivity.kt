@@ -12,6 +12,16 @@ import com.prowllabs.prowl.ui.theme.ProwlTheme
 import com.prowllabs.prowl.ui.util.ProwlUiPreferences
 
 internal class ProwlMainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        ProwlActivityTracker.onResumed(this)
+    }
+
+    override fun onPause() {
+        ProwlActivityTracker.onPaused(this)
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

@@ -27,8 +27,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.prowllabs.prowl.ui.R
 import com.prowllabs.prowl.core.formatting.ProwlLogFormatter
 import com.prowllabs.prowl.core.util.BodyDecoder
 import com.prowllabs.prowl.core.mocking.ProwlMockRule
@@ -77,11 +79,11 @@ fun MockEditorSheetContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Create Mock",
+            text = stringResource(R.string.prowl_mock_create_title),
             style = MaterialTheme.typography.titleLarge,
         )
         Text(
-            text = "Future requests matching this pattern will return the mocked response.",
+            text = stringResource(R.string.prowl_mock_create_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -89,8 +91,8 @@ fun MockEditorSheetContent(
             value = urlPattern,
             onValueChange = { urlPattern = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("URL pattern") },
-            placeholder = { Text("/api/users") },
+            label = { Text(stringResource(R.string.prowl_mock_url_pattern)) },
+            placeholder = { Text(stringResource(R.string.prowl_mock_url_placeholder)) },
             singleLine = true,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -98,15 +100,15 @@ fun MockEditorSheetContent(
                 value = method,
                 onValueChange = { method = it.uppercase() },
                 modifier = Modifier.weight(1f),
-                label = { Text("Method") },
-                placeholder = { Text("GET or ANY") },
+                label = { Text(stringResource(R.string.prowl_mock_method)) },
+                placeholder = { Text(stringResource(R.string.prowl_mock_method_placeholder)) },
                 singleLine = true,
             )
             OutlinedTextField(
                 value = statusCode,
                 onValueChange = { statusCode = it.filter(Char::isDigit) },
                 modifier = Modifier.weight(1f),
-                label = { Text("Status") },
+                label = { Text(stringResource(R.string.prowl_mock_status)) },
                 singleLine = true,
             )
         }
@@ -114,7 +116,7 @@ fun MockEditorSheetContent(
             value = body,
             onValueChange = { body = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Response body") },
+            label = { Text(stringResource(R.string.prowl_mock_response_body)) },
             minLines = 6,
             textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace),
         )
@@ -133,7 +135,7 @@ fun MockEditorSheetContent(
             modifier = Modifier.fillMaxWidth(),
             enabled = urlPattern.isNotBlank(),
         ) {
-            Text("Save Mock Rule")
+            Text(stringResource(R.string.prowl_mock_save_rule))
         }
     }
 }
@@ -151,10 +153,10 @@ fun MockEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mock Editor") },
+                title = { Text(stringResource(R.string.prowl_mock_create_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

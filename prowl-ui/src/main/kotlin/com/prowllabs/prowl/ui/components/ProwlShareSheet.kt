@@ -28,7 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.prowllabs.prowl.ui.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -57,15 +59,15 @@ fun ProwlShareSheet(
                 .padding(bottom = 32.dp),
         ) {
             Text(
-                text = "Share",
+                text = stringResource(R.string.prowl_share_title),
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             ShareOption(
                 icon = { Icon(Icons.Outlined.Share, null, modifier = Modifier.size(22.dp)) },
-                title = "Share JSON",
-                subtitle = "Export log as formatted JSON",
+                title = stringResource(R.string.prowl_share_json_title),
+                subtitle = stringResource(R.string.prowl_share_json_sub),
                 onClick = {
                     shareText(context, onShareJson())
                     onDismiss()
@@ -73,19 +75,19 @@ fun ProwlShareSheet(
             )
             ShareOption(
                 icon = { Icon(Icons.AutoMirrored.Outlined.Article, null, modifier = Modifier.size(22.dp)) },
-                title = "Copy JSON",
-                subtitle = "Copy to clipboard",
+                title = stringResource(R.string.prowl_copy_json_title),
+                subtitle = stringResource(R.string.prowl_copy_json_sub),
                 onClick = {
                     copyText(context, onShareJson())
-                    onCopied("JSON copied")
+                    onCopied(context.getString(R.string.prowl_json_copied))
                     onDismiss()
                 },
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             ShareOption(
                 icon = { Icon(Icons.Outlined.Terminal, null, modifier = Modifier.size(22.dp)) },
-                title = "Share cURL",
-                subtitle = "Export as cURL command",
+                title = stringResource(R.string.prowl_share_curl_title),
+                subtitle = stringResource(R.string.prowl_share_curl_sub),
                 onClick = {
                     shareText(context, onShareCurl())
                     onDismiss()
@@ -93,11 +95,11 @@ fun ProwlShareSheet(
             )
             ShareOption(
                 icon = { Icon(Icons.Outlined.ContentCopy, null, modifier = Modifier.size(22.dp)) },
-                title = "Copy cURL",
-                subtitle = "Copy command to clipboard",
+                title = stringResource(R.string.prowl_copy_curl_title),
+                subtitle = stringResource(R.string.prowl_copy_curl_sub),
                 onClick = {
                     copyText(context, onShareCurl())
-                    onCopied("cURL copied")
+                    onCopied(context.getString(R.string.prowl_curl_copied))
                     onDismiss()
                 },
             )
@@ -105,8 +107,8 @@ fun ProwlShareSheet(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 ShareOption(
                     icon = { Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(22.dp)) },
-                    title = "Create Mock",
-                    subtitle = "Mock this response for future requests",
+                    title = stringResource(R.string.prowl_share_create_mock_title),
+                    subtitle = stringResource(R.string.prowl_share_create_mock_sub),
                     onClick = {
                         onDismiss()
                         onCreateMock()
@@ -116,8 +118,8 @@ fun ProwlShareSheet(
             if (onCreateRequestRewrite != null) {
                 ShareOption(
                     icon = { Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(22.dp)) },
-                    title = "Rewrite Request",
-                    subtitle = "Modify URL, headers, or body for matching requests",
+                    title = stringResource(R.string.prowl_share_rewrite_title),
+                    subtitle = stringResource(R.string.prowl_share_rewrite_sub),
                     onClick = {
                         onDismiss()
                         onCreateRequestRewrite()
@@ -161,7 +163,10 @@ private fun shareText(context: Context, text: String) {
         putExtra(Intent.EXTRA_TEXT, text)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
-    context.startActivity(Intent.createChooser(intent, "Share via Prowl").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    context.startActivity(
+        Intent.createChooser(intent, context.getString(R.string.prowl_export_via))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
 }
 
 private fun copyText(context: Context, text: String) {

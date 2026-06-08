@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.prowllabs.prowl.ui.R
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -128,13 +130,13 @@ private fun ProwlStatusDonutChart(stats: ProwlRequestStats) {
             .padding(vertical = 4.dp),
     ) {
         Text(
-            text = "Status distribution",
+            text = stringResource(R.string.prowl_stats_status_distribution),
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp),
         )
         if (stats.total == 0) {
-            Text("No requests yet", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.prowl_empty_logs), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             return
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -179,13 +181,13 @@ private fun ProwlMethodBarChart(stats: ProwlRequestStats) {
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Methods",
+            text = stringResource(R.string.prowl_stats_methods),
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 8.dp),
         )
         if (entries.isEmpty()) {
-            Text("No requests yet", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.prowl_empty_logs), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             return
         }
         entries.forEach { (method, count) ->
@@ -240,7 +242,12 @@ private fun LegendRow(label: String, count: Int, color: Color, total: Int) {
             drawCircle(color = color)
         }
         Text(
-            text = "$label  $count (${if (total == 0) 0 else (count * 100 / total)}%)",
+            text = stringResource(
+                R.string.prowl_stats_row,
+                label,
+                count,
+                if (total == 0) 0 else (count * 100 / total),
+            ),
             modifier = Modifier.padding(start = 8.dp),
             fontSize = 12.sp,
         )

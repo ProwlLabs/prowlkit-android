@@ -1,5 +1,6 @@
 package com.prowllabs.prowl.core.runtime
 
+import com.prowllabs.prowl.core.ProwlInternalApi
 import com.prowllabs.prowl.core.logging.ProwlEndpointRateAlerts
 import com.prowllabs.prowl.core.logging.ResponseBodyLoggingTransformer
 import com.prowllabs.prowl.core.masking.SensitiveDataMasker
@@ -10,18 +11,17 @@ import com.prowllabs.prowl.core.mocking.ProwlRequestRewriter
 import com.prowllabs.prowl.core.storage.ProwlSessionPersistence
 import com.prowllabs.prowl.core.storage.ProwlStorage
 
+@ProwlInternalApi
 object ProwlRuntime {
+    private val configLock = Any()
+    private val ignoredUrlsStorage = linkedSetOf<String>()
+    private val ignoredUrlRegexesStorage = linkedSetOf<String>()
+
     @Volatile
     var isLoggingEnabled: Boolean = true
 
     @Volatile
     var isSensitiveDataMaskingEnabled: Boolean = false
-
-    @Volatile
-    var ignoredUrls: MutableSet<String> = linkedSetOf()
-
-    @Volatile
-    var ignoredUrlRegexes: MutableSet<String> = linkedSetOf()
 
     @Volatile
     var responseBodyLoggingTransformer: ResponseBodyLoggingTransformer? = null
@@ -39,6 +39,28 @@ object ProwlRuntime {
 
     val requestRewriter: ProwlRequestRewriter = ProwlRequestRewriter.shared
 
+    var ignoredUrls: Set<String>
+        get() = synchronized(configLock) { ignoredUrlsStorage.toSet() }
+        set(value) = synchronized(configLock) {
+            ignoredUrlsStorage.clear()
+            ignoredUrlsStorage.addAll(value)
+        }
+
+    var ignoredUrlRegexes: Set<String>
+        get() = synchronized(configLock) { ignoredUrlRegexesStorage.toSet() }
+        set(value) = synchronized(configLock) {
+            ignoredUrlRegexesStorage.clear()
+            ignoredUrlRegexesStorage.addAll(value)
+        }
+
+    fun addIgnoredUrl(urlSubstring: String) = synchronized(configLock) {
+        ignoredUrlsStorage.add(urlSubstring)
+    }
+
+    fun addIgnoredUrlRegex(pattern: String) = synchronized(configLock) {
+        ignoredUrlRegexesStorage.add(pattern)
+    }
+
     fun configure(
         storage: ProwlStorage? = null,
         masker: SensitiveDataMasker? = null,
@@ -51,14 +73,14 @@ object ProwlRuntime {
         isSensitiveDataMaskingEnabled?.let { this.isSensitiveDataMaskingEnabled = it }
     }
 
-    fun shouldIgnore(absoluteUrl: String): Boolean {
-        if (ignoredUrls.any { absoluteUrl.contains(it) }) return true
-        for (pattern in ignoredUrlRegexes) {
+    fun shouldIgnore(absoluteUrl: String): Boolean = synchronized(configLock) {
+        if (ignoredUrlsStorage.any { absoluteUrl.contains(it) }) return true
+        for (pattern in ignoredUrlRegexesStorage) {
             runCatching {
                 if (Regex(pattern).containsMatchIn(absoluteUrl)) return true
             }
         }
-        return false
+        false
     }
 
     fun onLogsCleared() {

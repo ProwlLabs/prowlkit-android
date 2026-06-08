@@ -1,5 +1,8 @@
 package com.prowllabs.prowl.core.mocking
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
@@ -9,6 +12,8 @@ import java.util.UUID
 class ProwlRequestRewriter {
     private val lock = Any()
     private val rules = mutableListOf<ProwlRequestRewriteRule>()
+    private val _rulesFlow = MutableStateFlow<List<ProwlRequestRewriteRule>>(emptyList())
+    val rulesFlow: StateFlow<List<ProwlRequestRewriteRule>> = _rulesFlow.asStateFlow()
 
     fun addRule(rule: ProwlRequestRewriteRule) {
         synchronized(lock) { rules.add(rule) }
@@ -31,6 +36,7 @@ class ProwlRequestRewriter {
     fun removeAllRules() {
         synchronized(lock) { rules.clear() }
         ProwlRequestRewritePersistence.clearAsync()
+        publishRules()
     }
 
     fun replaceAllRules(newRules: List<ProwlRequestRewriteRule>) {
@@ -38,25 +44,22 @@ class ProwlRequestRewriter {
             rules.clear()
             rules.addAll(newRules)
         }
-    }
-
-    private fun notifyChanged() {
-        ProwlRequestRewritePersistence.persistAsync(allRules())
+        publishRules()
     }
 
     fun allRules(): List<ProwlRequestRewriteRule> = synchronized(lock) { rules.toList() }
 
     fun findMatch(url: String?, method: String): ProwlRequestRewriteRule? {
         if (url.isNullOrBlank()) return null
-        val normalizedMethod = method.uppercase()
         return synchronized(lock) {
             rules.firstOrNull { rule ->
-                if (!rule.isEnabled || rule.targetUrlPattern.isEmpty()) return@firstOrNull false
-                if (!url.contains(rule.targetUrlPattern, ignoreCase = true)) return@firstOrNull false
-                if (rule.targetMethod.isNotEmpty() && rule.targetMethod.uppercase() != "ANY") {
-                    if (normalizedMethod != rule.targetMethod.uppercase()) return@firstOrNull false
-                }
-                true
+                ProwlRuleMatcher.matches(
+                    url = url,
+                    method = method,
+                    targetUrlPattern = rule.targetUrlPattern,
+                    targetMethod = rule.targetMethod,
+                    isEnabled = rule.isEnabled,
+                )
             }
         }
     }
@@ -99,6 +102,15 @@ class ProwlRequestRewriter {
         }
 
         return builder.build()
+    }
+
+    private fun notifyChanged() {
+        ProwlRequestRewritePersistence.persistAsync(allRules())
+        publishRules()
+    }
+
+    private fun publishRules() {
+        _rulesFlow.value = allRules()
     }
 
     companion object {

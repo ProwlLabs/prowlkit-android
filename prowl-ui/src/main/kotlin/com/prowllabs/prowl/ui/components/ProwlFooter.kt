@@ -8,7 +8,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.prowllabs.prowl.ui.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,7 +22,7 @@ fun ProwlFooterCredit(modifier: Modifier = Modifier) {
     ) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         Text(
-            text = "Prowl • Crafted by Elmee",
+            text = stringResource(R.string.prowl_footer_credit),
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
             textAlign = TextAlign.Center,
             fontSize = 12.sp,

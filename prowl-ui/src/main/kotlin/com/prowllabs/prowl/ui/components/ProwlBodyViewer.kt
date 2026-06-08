@@ -11,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.prowllabs.prowl.ui.R
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
@@ -77,7 +79,7 @@ fun ProwlBodyViewer(
         }
 
         Text(
-            text = "Tap to copy body",
+            text = stringResource(R.string.prowl_body_tap_copy),
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp),
@@ -91,7 +93,7 @@ fun ProwlMultipartViewer(parts: List<MultipartPart>) {
     Column(modifier = Modifier.fillMaxWidth()) {
         parts.forEachIndexed { index, part ->
             Text(
-                text = "Part ${index + 1}",
+                text = stringResource(R.string.prowl_multipart_part, index + 1),
                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(vertical = 4.dp),

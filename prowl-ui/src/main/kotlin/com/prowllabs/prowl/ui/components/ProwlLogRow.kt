@@ -197,7 +197,7 @@ private fun WatchBadge() {
 @Composable
 private fun RateAlertBadge() {
     Text(
-        text = "⚡ RATE",
+        text = "⚡ ${stringResource(R.string.prowl_rate_badge)}",
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .background(ProwlColors.Status4xx.copy(alpha = 0.18f))

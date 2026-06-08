@@ -53,36 +53,38 @@ class ProwlGrpcInterceptor : ClientInterceptor {
                         }
 
                         override fun onClose(status: Status, trailers: Metadata) {
-                            trailers.keys().forEach { key ->
-                                responseHeaders[key] = trailers.get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER)).orEmpty()
+                            runCatching {
+                                trailers.keys().forEach { key ->
+                                    responseHeaders[key] = trailers.get(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER)).orEmpty()
+                                }
+                                val duration = System.currentTimeMillis() - startedAt
+                                val url = "grpc://${method.fullMethodName}"
+                                val log = NetworkLog(
+                                    requestId = requestId,
+                                    url = url,
+                                    method = method.type.name,
+                                    requestHeaders = requestHeaders,
+                                    requestBody = NetworkLog.Body(
+                                        requestMessage.toByteArray(Charsets.UTF_8),
+                                        "application/grpc",
+                                    ),
+                                    responseHeaders = responseHeaders,
+                                    responseBody = NetworkLog.Body(
+                                        responseMessage.toByteArray(Charsets.UTF_8),
+                                        "application/grpc",
+                                    ),
+                                    statusCode = grpcStatusToHttp(status.code),
+                                    startedAtMillis = startedAt,
+                                    durationMillis = duration,
+                                    errorDescription = if (status.isOk) null else status.description,
+                                    protocol = NetworkProtocol.GRPC,
+                                )
+                                val finalLog = log.copy(
+                                    endpointRateAlertTriggered = ProwlEndpointRateAlerts.evaluate(log),
+                                )
+                                ProwlRuntime.storage.appendBlocking(finalLog)
+                                ProwlRuntime.onLogsChanged()
                             }
-                            val duration = System.currentTimeMillis() - startedAt
-                            val url = "grpc://${method.fullMethodName}"
-                            val log = NetworkLog(
-                                requestId = requestId,
-                                url = url,
-                                method = method.type.name,
-                                requestHeaders = requestHeaders,
-                                requestBody = NetworkLog.Body(
-                                    requestMessage.toByteArray(Charsets.UTF_8),
-                                    "application/grpc",
-                                ),
-                                responseHeaders = responseHeaders,
-                                responseBody = NetworkLog.Body(
-                                    responseMessage.toByteArray(Charsets.UTF_8),
-                                    "application/grpc",
-                                ),
-                                statusCode = grpcStatusToHttp(status.code),
-                                startedAtMillis = startedAt,
-                                durationMillis = duration,
-                                errorDescription = if (status.isOk) null else status.description,
-                                protocol = NetworkProtocol.GRPC,
-                            )
-                            val finalLog = log.copy(
-                                endpointRateAlertTriggered = ProwlEndpointRateAlerts.evaluate(log),
-                            )
-                            ProwlRuntime.storage.appendBlocking(finalLog)
-                            ProwlRuntime.onLogsChanged()
                             super.onClose(status, trailers)
                         }
                     },

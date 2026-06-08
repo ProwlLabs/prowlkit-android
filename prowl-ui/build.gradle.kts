@@ -24,6 +24,9 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs += listOf(
+            "-opt-in=com.prowllabs.prowl.core.ProwlInternalApi",
+        )
     }
 }
 

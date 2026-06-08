@@ -6,7 +6,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val detailDateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.getDefault())
+private val detailDateFormat = ThreadLocal.withInitial {
+    SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.getDefault())
+}
 
 fun NetworkLog.urlPath(): String = runCatching {
     val path = URI(url ?: return "/").path
@@ -38,10 +40,11 @@ fun NetworkLog.urlQueryItems(): List<Pair<String, String>> = runCatching {
     }
 }.getOrElse { emptyList() }
 
-fun NetworkLog.formattedStartedAt(): String = detailDateFormat.format(Date(startedAtMillis))
+fun NetworkLog.formattedStartedAt(): String =
+    detailDateFormat.get().format(Date(startedAtMillis))
 
 fun NetworkLog.formattedResponseAt(): String =
-    detailDateFormat.format(Date(startedAtMillis + durationMillis))
+    detailDateFormat.get().format(Date(startedAtMillis + durationMillis))
 
 fun NetworkLog.formattedDurationSeconds(): String =
     String.format(Locale.US, "%.6f", durationMillis / 1000.0)

@@ -2,7 +2,6 @@ package com.prowllabs.prowl.ui.util
 
 import android.app.Activity
 import android.app.Application
-import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -11,9 +10,11 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import com.prowllabs.prowl.ui.ProwlUiLauncher
 import com.prowllabs.prowl.ui.R
+import com.prowllabs.prowl.ui.components.ProwlBrandIcon
 import com.prowllabs.prowl.ui.internal.ProwlMainActivity
 import java.util.WeakHashMap
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Draggable in-app bubble to open Prowl without notification tap. */
 object ProwlFloatingBubble {
@@ -43,32 +44,39 @@ object ProwlFloatingBubble {
 
     private fun maybeShow(activity: Activity) {
         if (activity is ProwlMainActivity) return
-        if (!ProwlUiPreferences.isFloatingBubbleEnabled(activity)) return
-        if (bubbles.containsKey(activity)) return
+        if (!ProwlUiPreferences.isFloatingBubbleEnabled(activity)) {
+            hide(activity)
+            return
+        }
+
+        // Recreate every resume so library updates / icon changes apply immediately.
+        hide(activity)
 
         val decor = activity.window?.decorView as? ViewGroup ?: return
         val density = activity.resources.displayMetrics.density
-        val sizePx = (52 * density).toInt()
+        val iconHeightPx = (13f * density).roundToInt()
+        val iconWidthPx = (iconHeightPx * ProwlBrandIcon.ASPECT_RATIO).roundToInt()
+        val touchSizePx = (48f * density).roundToInt()
 
-        val bubble = ImageView(activity).apply {
-            setImageResource(R.drawable.ic_prowl_notification)
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-            val pad = (10 * density).toInt()
-            setPadding(pad, pad, pad, pad)
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(0xFF6C5CE7.toInt())
-            }
-            elevation = 10 * density
-            contentDescription = context.getString(R.string.prowl_floating_bubble)
-            setOnClickListener { ProwlUiLauncher.show(activity) }
-            attachDrag(activity, this)
+        val iconView = ImageView(activity).apply {
+            setImageResource(R.drawable.prowl_kit)
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            adjustViewBounds = true
+            layoutParams = FrameLayout.LayoutParams(iconWidthPx, iconHeightPx, Gravity.CENTER)
         }
 
-        val params = FrameLayout.LayoutParams(sizePx, sizePx).apply {
+        val bubble = FrameLayout(activity).apply {
+            addView(iconView)
+            elevation = 10f * density
+            contentDescription = context.getString(R.string.prowl_floating_bubble)
+            setOnClickListener { ProwlUiLauncher.show(activity) }
+            attachDrag(this)
+        }
+
+        val params = FrameLayout.LayoutParams(touchSizePx, touchSizePx).apply {
             gravity = Gravity.END or Gravity.BOTTOM
-            bottomMargin = (72 * density).toInt()
-            marginEnd = (16 * density).toInt()
+            bottomMargin = (72f * density).roundToInt()
+            marginEnd = (12f * density).roundToInt()
         }
         decor.addView(bubble, params)
         bubbles[activity] = bubble
@@ -79,7 +87,7 @@ object ProwlFloatingBubble {
         (bubble.parent as? ViewGroup)?.removeView(bubble)
     }
 
-    private fun attachDrag(activity: Activity, view: View) {
+    private fun attachDrag(view: View) {
         var downX = 0f
         var downY = 0f
         var startX = 0f
@@ -87,7 +95,6 @@ object ProwlFloatingBubble {
         var moved = false
 
         view.setOnTouchListener { v, event ->
-            val params = v.layoutParams as FrameLayout.LayoutParams
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downX = event.rawX

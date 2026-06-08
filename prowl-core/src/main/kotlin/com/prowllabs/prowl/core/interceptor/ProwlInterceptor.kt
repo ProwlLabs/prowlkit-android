@@ -22,7 +22,15 @@ class ProwlInterceptor : Interceptor {
         if (!ProwlRuntime.isLoggingEnabled) {
             return chain.proceed(chain.request())
         }
+        return runCatching { interceptCaptured(chain) }
+            .getOrElse { error ->
+                // Never crash the host app because of the debugger.
+                runCatching { chain.proceed(chain.request()) }
+                    .getOrElse { throw error }
+            }
+    }
 
+    private fun interceptCaptured(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
         val url = originalRequest.url.toString()
         if (!shouldCapture(originalRequest)) {
@@ -225,20 +233,41 @@ class ProwlInterceptor : Interceptor {
     private fun buildMockResponse(request: Request, rule: com.prowllabs.prowl.core.mocking.ProwlMockRule): Response {
         val statusCode = rule.mockStatusCode.coerceIn(100, 599)
         val mediaType = rule.mockHeaders["Content-Type"]?.toMediaTypeOrNull()
-        val body = rule.mockBody.toResponseBody(mediaType)
+            ?: "application/json; charset=utf-8".toMediaTypeOrNull()
+        val bodyBytes = rule.mockBody
+        val body = bodyBytes.toResponseBody(mediaType)
         val headersBuilder = Headers.Builder()
-        rule.mockHeaders.forEach { (key, value) -> headersBuilder.add(key, value) }
+        rule.mockHeaders.forEach { (key, value) ->
+            if (!key.equals("Content-Length", ignoreCase = true) &&
+                !key.equals("Content-Encoding", ignoreCase = true)
+            ) {
+                headersBuilder.add(key, value)
+            }
+        }
+        headersBuilder.add("Content-Length", bodyBytes.size.toString())
 
         return Response.Builder()
             .request(request)
             .protocol(Protocol.HTTP_1_1)
             .code(statusCode)
-            .message("Mocked by Prowl")
+            .message(mockStatusMessage(statusCode))
             .headers(headersBuilder.build())
             .body(body)
             .sentRequestAtMillis(System.currentTimeMillis())
             .receivedResponseAtMillis(System.currentTimeMillis())
             .build()
+    }
+
+    private fun mockStatusMessage(statusCode: Int): String = when (statusCode) {
+        200 -> "OK"
+        201 -> "Created"
+        204 -> "No Content"
+        400 -> "Bad Request"
+        401 -> "Unauthorized"
+        403 -> "Forbidden"
+        404 -> "Not Found"
+        500 -> "Internal Server Error"
+        else -> "Mocked by Prowl"
     }
 
     companion object {

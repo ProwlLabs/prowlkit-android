@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.prowllabs.prowl.core.formatting.ProwlLogFormatter
+import com.prowllabs.prowl.core.util.BodyDecoder
 import com.prowllabs.prowl.core.mocking.ProwlMockRule
 import com.prowllabs.prowl.core.model.NetworkLog
 import com.prowllabs.prowl.core.runtime.ProwlRuntime
@@ -58,7 +59,14 @@ fun MockEditorSheetContent(
     }
     var body by remember(sourceLog) {
         mutableStateOf(
-            sourceLog?.responseBody?.let { ProwlLogFormatter.prettyBodyText(it) }.orEmpty(),
+            sourceLog?.responseBody?.let { responseBody ->
+                val raw = BodyDecoder.toText(responseBody.data, responseBody.contentType)
+                if (raw.isBlank()) {
+                    ProwlLogFormatter.prettyBodyText(responseBody)
+                } else {
+                    runCatching { ProwlLogFormatter.prettyBodyText(responseBody) }.getOrDefault(raw)
+                }
+            }.orEmpty(),
         )
     }
 

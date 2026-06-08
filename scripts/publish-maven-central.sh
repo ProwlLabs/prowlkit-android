@@ -16,13 +16,27 @@ fi
 
 cd "${ROOT}"
 
-KEY_ID="$(gpg --list-secret-keys --keyid-format=long 2>/dev/null | awk '/^sec/ {print $2}' | cut -d'/' -f2 | head -1 || true)"
-if [[ -n "${KEY_ID}" ]]; then
-  "${ROOT}/scripts/upload-gpg-keyservers.sh" "${KEY_ID}"
-  echo ""
-  echo "Waiting 30s for keyserver propagation..."
-  sleep 30
+get_prop() {
+  grep "^${1}=" "${ROOT}/publish.properties" | cut -d= -f2- | head -1
+}
+
+KEY_ID="$(get_prop GPG_KEY_ID || true)"
+if [[ -z "${KEY_ID}" ]]; then
+  KEY_ID="$(gpg --list-secret-keys --keyid-format=long 'elmysufiandy@gmail.com' 2>/dev/null \
+    | awk '/^sec/ {print $2}' | cut -d'/' -f2 | head -1 || true)"
 fi
+
+if [[ -z "${KEY_ID}" ]]; then
+  echo "No GPG key for elmysufiandy@gmail.com. Run: ./scripts/setup-gpg-maven.sh elmysufiandy@gmail.com"
+  exit 1
+fi
+
+python3 "${ROOT}/scripts/fix-signing-properties.py"
+
+"${ROOT}/scripts/upload-gpg-keyservers.sh" "${KEY_ID}"
+echo ""
+echo "Waiting 30s for keyserver propagation..."
+sleep 30
 
 ./gradlew publishAllToMavenCentral --no-daemon "$@"
 "${ROOT}/scripts/upload-staging-to-portal.sh"

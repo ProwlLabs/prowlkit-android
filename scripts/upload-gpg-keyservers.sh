@@ -3,12 +3,13 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export GNUPGHOME="${ROOT}/.gnupg"
+GPG="${GPG:-$(command -v gpg || echo /opt/homebrew/bin/gpg)}"
 KEY_ID="${1:-B8490A0A9D2EA45E}"
 
 echo "Uploading GPG public key ${KEY_ID} to Sonatype-supported keyservers..."
 for ks in hkps://keyserver.ubuntu.com hkps://keys.openpgp.org hkps://pgp.mit.edu; do
   echo "  → ${ks}"
-  gpg --keyserver "${ks}" --send-keys "${KEY_ID}" 2>&1 || echo "    (warn: upload to ${ks} failed)"
+  "${GPG}" --keyserver "${ks}" --send-keys "${KEY_ID}" 2>&1 || echo "    (warn: upload to ${ks} failed)"
 done
 
 FP="$(gpg --list-keys --with-colons "${KEY_ID}" 2>/dev/null | awk -F: '$1=="fpr" {print $10; exit}')"

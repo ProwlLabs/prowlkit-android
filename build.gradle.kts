@@ -167,6 +167,20 @@ tasks.register("publishAllToMavenLocal") {
 tasks.register("publishAllToGitHubPackages") {
     group = "publishing"
     description = "Publishes all library modules to GitHub Packages."
+    doFirst {
+        val actor = publishProperty("GITHUB_ACTOR") ?: publishProperty("gpr.user")
+        val token = publishProperty("GITHUB_TOKEN") ?: publishProperty("gpr.key")
+        require(!actor.isNullOrBlank() && !token.isNullOrBlank()) {
+            """
+            GitHub Packages credentials missing.
+            Add to publish.properties (or ~/.gradle/gradle.properties):
+              GITHUB_ACTOR=your-github-username
+              GITHUB_TOKEN=ghp_...   # classic PAT with write:packages (+ repo if private)
+
+            Or publish from GitHub Actions: Actions → Publish → Run workflow (target: github).
+            """.trimIndent()
+        }
+    }
     dependsOn(
         ":prowl-core:publishReleasePublicationToGitHubPackagesRepository",
         ":prowl-ui:publishReleasePublicationToGitHubPackagesRepository",

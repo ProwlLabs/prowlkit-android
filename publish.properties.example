@@ -1,0 +1,17 @@
+# Copy to publish.properties (gitignored) or set in ~/.gradle/gradle.properties
+
+GROUP=com.prowllabs.prowl
+VERSION=0.1.0
+
+# GitHub Packages (https://github.com/ProwlLabs/prowlkit-android/packages)
+GITHUB_ACTOR=your-github-username
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+
+# Maven Central / Sonatype OSSRH (https://central.sonatype.com)
+MAVEN_CENTRAL_USERNAME=your-sonatype-token-username
+MAVEN_CENTRAL_PASSWORD=your-sonatype-token-password
+
+# OpenPGP signing (required for Maven Central releases)
+# Paste the ASCII-armored private key block; use \n for line breaks if single-line.
+SIGNING_KEY=
+SIGNING_PASSWORD=

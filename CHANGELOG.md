@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-09
+
+### Added
+
+- Statistics charts: traffic area graph, latency trend, vertical status/method bars, latency histogram.
+- Collapsible **Overview** section in Settings (collapsed by default with request summary).
+- P95 latency metric in statistics overview.
+
+### Changed
+
+- Settings UI revamp with Material 3 grouped sections (Capture, Privacy, Inspector, Mocks, Export).
+- Mock import/export moved from Export to **Mocks** section; Export is logs-only (text, cURL, HAR).
+- Shake accelerometer registers only when shake-to-open or shake-to-clear is enabled.
+- Default toggles: request logging ON; persistence, masking, bubble, and shake gestures OFF.
+
+### Fixed
+
+- Duplicate WebSocket sensor listener when inspector was open.
+- Gradle consumer no longer holds accelerometer when shake features are disabled.
+
 ## [0.1.0] - 2026-06-08
 
 Initial public release of ProwlKit Android.

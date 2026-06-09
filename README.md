@@ -131,9 +131,9 @@ repositories {
 ### Granular modules (optional)
 
 ```kotlin
-debugImplementation("io.github.prowllabs:prowl-core:0.1.0") // interceptor only
-debugImplementation("io.github.prowllabs:prowl-ui:0.1.0")   // UI only
-debugImplementation("io.github.prowllabs:prowl-grpc:0.1.0") // gRPC only
+debugImplementation("io.github.prowllabs:prowl-core:1.0.0") // interceptor only
+debugImplementation("io.github.prowllabs:prowl-ui:1.0.0")   // UI only
+debugImplementation("io.github.prowllabs:prowl-grpc:1.0.0") // gRPC only
 ```
 
 ## Quick Start

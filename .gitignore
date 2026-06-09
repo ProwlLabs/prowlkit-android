@@ -13,4 +13,5 @@ build/
 *.aab
 publish.properties
 .gnupg/
+scripts/
 .scripts/

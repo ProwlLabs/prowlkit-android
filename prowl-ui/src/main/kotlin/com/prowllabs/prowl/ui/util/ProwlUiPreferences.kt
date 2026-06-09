@@ -26,6 +26,7 @@ object ProwlUiPreferences {
 
     fun setShakeToClearEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_SHAKE_TO_CLEAR, enabled).apply()
+        ProwlGlobalShakeMonitor.refreshRegistration()
     }
 
     fun isShakeToOpenEnabled(context: Context): Boolean =
@@ -33,6 +34,7 @@ object ProwlUiPreferences {
 
     fun setShakeToOpenEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_SHAKE_TO_OPEN, enabled).apply()
+        ProwlGlobalShakeMonitor.refreshRegistration()
     }
 
     fun themeMode(context: Context): ProwlThemeMode {

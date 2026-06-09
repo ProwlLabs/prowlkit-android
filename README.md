@@ -342,7 +342,7 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 ./gradlew :prowl-core:testDebugUnitTest
 ```
 
-## Publish (Maintainers)
+## Publish
 
 1. Bump `VERSION` in `gradle.properties`.
 2. For local publish, copy `publish.properties.example` → `publish.properties` and fill credentials.
@@ -352,36 +352,6 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 ./gradlew publishAllToGitHubPackages      # needs GITHUB_ACTOR + GITHUB_TOKEN
 ./gradlew publishAllToMavenCentral        # needs Sonatype + signing keys
 ```
-
-### GitHub Packages (first publish)
-
-Packages appear under **Packages** on the repo after a successful publish workflow.
-
-**Option A — GitHub Release (recommended)**
-
-1. Push `main` with the workflow files (`.github/workflows/publish.yml`, `ci.yml`).
-2. Create a release: **Releases → Draft new release → tag `v0.1.0` → Publish release**.
-3. The **Publish** workflow runs automatically and uploads `prowl`, `prowl-core`, `prowl-ui`, and `prowl-grpc` to GitHub Packages.
-4. Open [Packages](https://github.com/ProwlLabs/prowlkit-android/packages) — artifacts should list under `io.github.prowllabs`.
-
-**Option B — Manual workflow**
-
-1. **Actions → Publish → Run workflow**
-2. Version: `0.1.0`, target: `github`
-3. Uses `GITHUB_TOKEN` automatically (no extra secret needed for the same repo).
-
-`gpr.user` / `gpr.key` in consumer apps need a PAT with `read:packages` (and `repo` for private repos).
-
-### CI & Maven Central
-
-- **CI** (`.github/workflows/ci.yml`) — unit tests on every PR / push to `main`.
-- **Publish** (`.github/workflows/publish.yml`) — on **Release published**, pushes to GitHub Packages; also pushes to Maven Central when `MAVEN_CENTRAL_*` + signing secrets are set.
-
-### Maven Central checklist
-
-1. Namespace `io.github.prowllabs` verified at [central.sonatype.com](https://central.sonatype.com/).
-2. Add repo secrets: `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `SIGNING_KEY`, `SIGNING_PASSWORD`.
-3. Publish via workflow (`target: maven-central` or `all`), or create a release with secrets configured; close + release the staging repo in the Sonatype UI.
 
 ## Troubleshooting
 

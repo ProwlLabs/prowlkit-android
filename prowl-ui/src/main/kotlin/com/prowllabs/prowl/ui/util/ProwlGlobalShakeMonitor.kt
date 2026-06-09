@@ -25,7 +25,7 @@ object ProwlGlobalShakeMonitor : SensorEventListener {
         val callbacks = object : Application.ActivityLifecycleCallbacks {
             override fun onActivityResumed(activity: android.app.Activity) {
                 foregroundActivities++
-                registerSensor()
+                refreshRegistration()
             }
 
             override fun onActivityPaused(activity: android.app.Activity) {
@@ -54,9 +54,25 @@ object ProwlGlobalShakeMonitor : SensorEventListener {
         foregroundActivities = 0
     }
 
+    /** Re-evaluates whether the accelerometer should be registered (e.g. after toggling shake prefs). */
+    fun refreshRegistration() {
+        if (foregroundActivities > 0 && isShakeFeatureEnabled()) {
+            registerSensor()
+        } else {
+            unregisterSensor()
+        }
+    }
+
+    private fun isShakeFeatureEnabled(): Boolean {
+        val context = ProwlRuntime.hostApplicationContext() ?: return false
+        return ProwlUiPreferences.isShakeToOpenEnabled(context) ||
+            ProwlUiPreferences.isShakeToClearEnabled(context)
+    }
+
     private fun registerSensor() {
         val sm = sensorManager ?: return
         val sensor = accelerometer ?: return
+        sm.unregisterListener(this)
         sm.registerListener(this, sensor, SensorManager.SENSOR_DELAY_UI)
     }
 
@@ -68,7 +84,10 @@ object ProwlGlobalShakeMonitor : SensorEventListener {
         val context = ProwlRuntime.hostApplicationContext() ?: return
         val shakeToOpen = ProwlUiPreferences.isShakeToOpenEnabled(context)
         val shakeToClear = ProwlUiPreferences.isShakeToClearEnabled(context)
-        if (!shakeToOpen && !shakeToClear) return
+        if (!shakeToOpen && !shakeToClear) {
+            unregisterSensor()
+            return
+        }
 
         val x = event.values[0]
         val y = event.values[1]

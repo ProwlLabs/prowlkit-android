@@ -2,26 +2,18 @@ package com.prowllabs.prowl.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.prowllabs.prowl.core.runtime.ProwlRuntime
 import com.prowllabs.prowl.ui.screen.InspectorScreen
 import com.prowllabs.prowl.ui.screen.LogDetailScreen
 import com.prowllabs.prowl.ui.screen.MockEditorScreen
 import com.prowllabs.prowl.ui.screen.MocksScreen
 import com.prowllabs.prowl.ui.screen.RequestRewriteEditorScreen
 import com.prowllabs.prowl.ui.screen.SettingsScreen
-import com.prowllabs.prowl.ui.util.ProwlShakeDetector
 import com.prowllabs.prowl.ui.util.ProwlThemeMode
-import com.prowllabs.prowl.ui.util.ProwlUiPreferences
 import java.util.UUID
 
 object ProwlRoutes {
@@ -47,16 +39,7 @@ fun ProwlNavHost(
     onClose: () -> Unit,
     onThemeChanged: (ProwlThemeMode) -> Unit = {},
 ) {
-    val context = LocalContext.current
     val navController = rememberNavController()
-    var shakeToClearEnabled by remember {
-        mutableStateOf(ProwlUiPreferences.isShakeToClearEnabled(context))
-    }
-
-    ProwlShakeDetector(enabled = shakeToClearEnabled) {
-        ProwlRuntime.storage.clearBlocking()
-        ProwlRuntime.onLogsCleared()
-    }
 
     NavHost(navController = navController, startDestination = ProwlRoutes.INSPECTOR) {
         composable(ProwlRoutes.INSPECTOR) {
@@ -84,7 +67,6 @@ fun ProwlNavHost(
             SettingsScreen(
                 onBack = { navController.popBackStack() },
                 onOpenMocks = { navController.navigate(ProwlRoutes.MOCKS) },
-                onShakePrefChanged = { enabled -> shakeToClearEnabled = enabled },
                 onThemeChanged = onThemeChanged,
             )
         }

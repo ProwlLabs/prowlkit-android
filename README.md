@@ -325,7 +325,7 @@ From the inspector detail screen or settings:
 
 - **Formatted text** — readable full entries
 - **cURL** — replayable commands
-- **HAR** — import into Charles, Proxyman, etc.
+- **HAR** — import into Charles, Proxyman, Bruno etc.
 
 ## Sample App
 
@@ -342,19 +342,6 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 ./gradlew :prowl-core:testDebugUnitTest
 ```
 
-## Publish
-
-1. Bump `VERSION` in `gradle.properties`.
-2. For local publish, copy `publish.properties.example` → `publish.properties` and fill credentials.
-
-```bash
-./gradlew publishAllToMavenLocal          # ~/.m2/repository
-./scripts/publish-github-packages.sh      # needs GITHUB_ACTOR + GITHUB_TOKEN in publish.properties
-./scripts/publish-maven-central.sh        # Sonatype + signing keys
-```
-
-`VERSION` in `publish.properties` / `gradle.properties` applies to **Maven Central, GitHub Packages, and mavenLocal** (currently `1.0.1`).
-
 ## Troubleshooting
 
 - **Inspector does not show traffic** — ensure `.applyProwl()` is on the same `OkHttpClient` your app uses and `Prowl.isLoggingEnabled` is `true`.
@@ -362,33 +349,6 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 - **App crashes after mocking** — use status `200` and valid JSON for the endpoint schema; overly broad patterns can break auth/token calls.
 - **Stale library after local publish** — run `./gradlew --refresh-dependencies` in the host app and reinstall.
 - **Floating bubble icon not updating** — force-stop the app or toggle the bubble setting in Prowl Settings after upgrading.
-
-## Public API Policy
-
-- `Prowl` facade remains the main public entrypoint.
-- Core internals stay `internal` unless there is a clear consumer need.
-- Any new public API should be documented in this `README.md` and added to `CHANGELOG.md`.
-
-## Release Checklist
-
-1. Run tests and sample build:
-
-```bash
-./gradlew :prowl-core:testDebugUnitTest :sample:assembleDebug
-```
-
-2. Verify CI / publish workflow is green.
-3. Review public API surface on the `prowl` facade.
-4. Validate docs examples in this `README.md` still match current behavior.
-5. Create an immutable annotated tag and push it:
-
-```bash
-git tag -a 1.0.0 -m "Release 1.0.0"
-git push origin 1.0.0
-```
-
-6. Publish to Maven Central / GitHub Packages as needed.
-7. Update `CHANGELOG.md` with release notes.
 
 ## Notes
 

@@ -199,3 +199,18 @@ tasks.register("publishAllToMavenCentral") {
         ":prowl-grpc:publishReleasePublicationToMavenCentralRepository",
     )
 }
+
+tasks.register<Exec>("finalizeMavenCentralDeployment") {
+    group = "publishing"
+    description =
+        "Moves a maven-publish deployment from the OSSRH Staging API buffer to the Central Portal."
+    workingDir = rootProject.projectDir
+    commandLine("bash", "scripts/finalize-maven-central.sh")
+}
+
+tasks.register("publishAndReleaseMavenCentral") {
+    group = "publishing"
+    description = "Publishes all modules to Maven Central and finalizes the Portal deployment."
+    dependsOn("publishAllToMavenCentral", "finalizeMavenCentralDeployment")
+    tasks.named("finalizeMavenCentralDeployment").configure { mustRunAfter("publishAllToMavenCentral") }
+}

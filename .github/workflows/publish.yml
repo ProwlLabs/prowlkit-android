@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Maven version to publish (e.g. 0.1.0)"
+        description: "Maven version to publish (e.g. 1.0.0)"
         required: true
-        default: "0.1.0"
+        default: "1.0.0"
       target:
         description: "Publish target"
         required: true

@@ -349,9 +349,11 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 
 ```bash
 ./gradlew publishAllToMavenLocal          # ~/.m2/repository
-./gradlew publishAllToGitHubPackages      # needs GITHUB_ACTOR + GITHUB_TOKEN
-./gradlew publishAllToMavenCentral        # needs Sonatype + signing keys
+./scripts/publish-github-packages.sh      # needs GITHUB_ACTOR + GITHUB_TOKEN in publish.properties
+./scripts/publish-maven-central.sh        # Sonatype + signing keys
 ```
+
+`VERSION` in `publish.properties` / `gradle.properties` applies to **Maven Central, GitHub Packages, and mavenLocal** (currently `1.0.0`).
 
 ## Troubleshooting
 
@@ -381,8 +383,8 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 5. Create an immutable annotated tag and push it:
 
 ```bash
-git tag -a 0.1.0 -m "Release 0.1.0"
-git push origin 0.1.0
+git tag -a 1.0.0 -m "Release 1.0.0"
+git push origin 1.0.0
 ```
 
 6. Publish to Maven Central / GitHub Packages as needed.

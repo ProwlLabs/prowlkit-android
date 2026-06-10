@@ -131,9 +131,9 @@ repositories {
 ### Granular modules (optional)
 
 ```kotlin
-debugImplementation("io.github.prowllabs:prowl-core:1.0.0") // interceptor only
-debugImplementation("io.github.prowllabs:prowl-ui:1.0.0")   // UI only
-debugImplementation("io.github.prowllabs:prowl-grpc:1.0.0") // gRPC only
+debugImplementation("io.github.prowllabs:prowl-core:1.0.1") // interceptor only
+debugImplementation("io.github.prowllabs:prowl-ui:1.0.1")   // UI only
+debugImplementation("io.github.prowllabs:prowl-grpc:1.0.1") // gRPC only
 ```
 
 ## Quick Start
@@ -353,7 +353,7 @@ The `:sample` module demonstrates `Prowl.start()`, `.applyProwl()`, mock rules, 
 ./scripts/publish-maven-central.sh        # Sonatype + signing keys
 ```
 
-`VERSION` in `publish.properties` / `gradle.properties` applies to **Maven Central, GitHub Packages, and mavenLocal** (currently `1.0.0`).
+`VERSION` in `publish.properties` / `gradle.properties` applies to **Maven Central, GitHub Packages, and mavenLocal** (currently `1.0.1`).
 
 ## Troubleshooting
 

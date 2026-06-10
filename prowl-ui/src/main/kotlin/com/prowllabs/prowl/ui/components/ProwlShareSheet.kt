@@ -12,11 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Article
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -65,7 +65,7 @@ fun ProwlShareSheet(
                 fontWeight = FontWeight.SemiBold,
             )
             ShareOption(
-                icon = { Icon(Icons.Outlined.Share, null, modifier = Modifier.size(22.dp)) },
+                icon = { Icon(Icons.Filled.Share, null, modifier = Modifier.size(22.dp)) },
                 title = stringResource(R.string.prowl_share_json_title),
                 subtitle = stringResource(R.string.prowl_share_json_sub),
                 onClick = {
@@ -74,7 +74,7 @@ fun ProwlShareSheet(
                 },
             )
             ShareOption(
-                icon = { Icon(Icons.AutoMirrored.Outlined.Article, null, modifier = Modifier.size(22.dp)) },
+                icon = { Icon(Icons.Filled.List, null, modifier = Modifier.size(22.dp)) },
                 title = stringResource(R.string.prowl_copy_json_title),
                 subtitle = stringResource(R.string.prowl_copy_json_sub),
                 onClick = {
@@ -85,7 +85,7 @@ fun ProwlShareSheet(
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             ShareOption(
-                icon = { Icon(Icons.Outlined.Terminal, null, modifier = Modifier.size(22.dp)) },
+                icon = { Icon(Icons.Filled.Build, null, modifier = Modifier.size(22.dp)) },
                 title = stringResource(R.string.prowl_share_curl_title),
                 subtitle = stringResource(R.string.prowl_share_curl_sub),
                 onClick = {
@@ -94,7 +94,7 @@ fun ProwlShareSheet(
                 },
             )
             ShareOption(
-                icon = { Icon(Icons.Outlined.ContentCopy, null, modifier = Modifier.size(22.dp)) },
+                icon = { Icon(Icons.Filled.Create, null, modifier = Modifier.size(22.dp)) },
                 title = stringResource(R.string.prowl_copy_curl_title),
                 subtitle = stringResource(R.string.prowl_copy_curl_sub),
                 onClick = {
@@ -106,7 +106,7 @@ fun ProwlShareSheet(
             if (onCreateMock != null) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 ShareOption(
-                    icon = { Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(22.dp)) },
+                    icon = { Icon(Icons.Filled.Edit, null, modifier = Modifier.size(22.dp)) },
                     title = stringResource(R.string.prowl_share_create_mock_title),
                     subtitle = stringResource(R.string.prowl_share_create_mock_sub),
                     onClick = {
@@ -117,7 +117,7 @@ fun ProwlShareSheet(
             }
             if (onCreateRequestRewrite != null) {
                 ShareOption(
-                    icon = { Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(22.dp)) },
+                    icon = { Icon(Icons.Filled.Edit, null, modifier = Modifier.size(22.dp)) },
                     title = stringResource(R.string.prowl_share_rewrite_title),
                     subtitle = stringResource(R.string.prowl_share_rewrite_sub),
                     onClick = {

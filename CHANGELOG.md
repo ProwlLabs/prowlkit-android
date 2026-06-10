@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `prowl-ui` now depends on `material-icons-core` instead of `material-icons-extended`, reducing transitive APK/DEX size for consumers.
+- Compose `ui-tooling-preview` is `compileOnly` in `prowl-ui` so it is not shipped to library consumers.
+
 ## [1.0.0] - 2026-06-09
 
 ### Added

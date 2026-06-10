@@ -14,9 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -271,13 +271,13 @@ private fun MockRuleRow(
             )
             IconButton(onClick = onMoveUp, enabled = canMoveUp) {
                 Icon(
-                    Icons.Outlined.KeyboardArrowUp,
+                    Icons.Filled.KeyboardArrowUp,
                     contentDescription = stringResource(R.string.prowl_mock_move_up),
                 )
             }
             IconButton(onClick = onMoveDown, enabled = canMoveDown) {
                 Icon(
-                    Icons.Outlined.KeyboardArrowDown,
+                    Icons.Filled.KeyboardArrowDown,
                     contentDescription = stringResource(R.string.prowl_mock_move_down),
                 )
             }
@@ -362,7 +362,7 @@ private fun RuleToggleRow(
         }
         IconButton(onClick = onDelete) {
             Icon(
-                Icons.Outlined.Delete,
+                Icons.Filled.Delete,
                 contentDescription = stringResource(R.string.prowl_delete),
                 tint = MaterialTheme.colorScheme.error,
             )

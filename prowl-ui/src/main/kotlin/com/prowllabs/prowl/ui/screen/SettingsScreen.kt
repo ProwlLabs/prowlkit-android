@@ -19,20 +19,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.automirrored.outlined.Article
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.BubbleChart
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.FileUpload
-import androidx.compose.material.icons.outlined.PhonelinkRing
-import androidx.compose.material.icons.outlined.Security
-import androidx.compose.material.icons.outlined.Sensors
-import androidx.compose.material.icons.outlined.Storage
-import androidx.compose.material.icons.outlined.Terminal
-import androidx.compose.material.icons.outlined.Vibration
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -161,7 +160,7 @@ fun SettingsScreen(
                     SettingsSwitchItem(
                         title = stringResource(R.string.prowl_request_logging),
                         subtitle = stringResource(R.string.prowl_logging_sub),
-                        icon = { Icon(Icons.Outlined.Sensors, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                         checked = loggingEnabled,
                         onCheckedChange = {
                             loggingEnabled = it
@@ -171,7 +170,7 @@ fun SettingsScreen(
                     SettingsSwitchItem(
                         title = stringResource(R.string.prowl_persist_sessions),
                         subtitle = stringResource(R.string.prowl_persist_sessions_sub),
-                        icon = { Icon(Icons.Outlined.Storage, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.List, contentDescription = null) },
                         checked = persistSessions,
                         onCheckedChange = { enabled ->
                             persistSessions = enabled
@@ -190,7 +189,7 @@ fun SettingsScreen(
                     SettingsSwitchItem(
                         title = stringResource(R.string.prowl_masking),
                         subtitle = stringResource(R.string.prowl_masking_toggle_sub),
-                        icon = { Icon(Icons.Outlined.Security, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                         checked = maskingEnabled,
                         onCheckedChange = {
                             maskingEnabled = it
@@ -209,7 +208,7 @@ fun SettingsScreen(
                     SettingsSwitchItem(
                         title = stringResource(R.string.prowl_floating_bubble),
                         subtitle = stringResource(R.string.prowl_floating_bubble_sub),
-                        icon = { Icon(Icons.Outlined.BubbleChart, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.AddCircle, contentDescription = null) },
                         checked = floatingBubble,
                         onCheckedChange = { enabled ->
                             floatingBubble = enabled
@@ -220,7 +219,7 @@ fun SettingsScreen(
                     SettingsSwitchItem(
                         title = stringResource(R.string.prowl_shake_open),
                         subtitle = stringResource(R.string.prowl_shake_open_sub),
-                        icon = { Icon(Icons.Outlined.Vibration, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Phone, contentDescription = null) },
                         checked = shakeToOpen,
                         onCheckedChange = { enabled ->
                             shakeToOpen = enabled
@@ -230,7 +229,7 @@ fun SettingsScreen(
                     SettingsSwitchItem(
                         title = stringResource(R.string.prowl_shake_clear),
                         subtitle = stringResource(R.string.prowl_shake_clear_sub),
-                        icon = { Icon(Icons.Outlined.PhonelinkRing, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
                         checked = shakeToClear,
                         onCheckedChange = { enabled ->
                             shakeToClear = enabled
@@ -245,7 +244,7 @@ fun SettingsScreen(
                 SettingsCard {
                     ListItem(
                         headlineContent = { Text(stringResource(R.string.prowl_theme)) },
-                        leadingContent = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
+                        leadingContent = { Icon(Icons.Filled.Settings, contentDescription = null) },
                         supportingContent = {
                             SingleChoiceSegmentedButtonRow(
                                 modifier = Modifier
@@ -291,13 +290,13 @@ fun SettingsScreen(
                             ProwlRuntime.mocker.allRules().size,
                             ProwlRuntime.requestRewriter.allRules().size,
                         ),
-                        icon = { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Star, contentDescription = null) },
                         onClick = onOpenMocks,
                     )
                     SettingsNavigationItem(
                         title = stringResource(R.string.prowl_export_mocks),
                         subtitle = stringResource(R.string.prowl_export_mocks_sub),
-                        icon = { Icon(Icons.Outlined.FileUpload, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Share, contentDescription = null) },
                         onClick = {
                             shareExport(
                                 context,
@@ -309,7 +308,7 @@ fun SettingsScreen(
                     SettingsNavigationItem(
                         title = stringResource(R.string.prowl_import_mocks),
                         subtitle = stringResource(R.string.prowl_import_mocks_sub),
-                        icon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                         onClick = { showMockImport = true },
                         showDivider = false,
                     )
@@ -321,7 +320,7 @@ fun SettingsScreen(
                     SettingsNavigationItem(
                         title = stringResource(R.string.prowl_export_formatted),
                         subtitle = stringResource(R.string.prowl_export_formatted_sub),
-                        icon = { Icon(Icons.AutoMirrored.Outlined.Article, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.List, contentDescription = null) },
                         onClick = {
                             shareExport(context, ProwlLogFormatter.export(logs, ProwlExportFormat.FORMATTED_TEXT))
                         },
@@ -329,7 +328,7 @@ fun SettingsScreen(
                     SettingsNavigationItem(
                         title = stringResource(R.string.prowl_export_curl),
                         subtitle = stringResource(R.string.prowl_export_curl_sub),
-                        icon = { Icon(Icons.Outlined.Terminal, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Build, contentDescription = null) },
                         onClick = {
                             shareExport(context, ProwlLogFormatter.export(logs, ProwlExportFormat.CURL_COMMANDS))
                         },
@@ -337,7 +336,7 @@ fun SettingsScreen(
                     SettingsNavigationItem(
                         title = stringResource(R.string.prowl_export_har),
                         subtitle = stringResource(R.string.prowl_export_har_sub),
-                        icon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
+                        icon = { Icon(Icons.Filled.Send, contentDescription = null) },
                         onClick = {
                             shareExport(context, ProwlLogFormatter.export(logs, ProwlExportFormat.HAR), "prowl.har")
                         },
@@ -416,7 +415,7 @@ private fun CollapsibleSettingsGroup(
                 }
             }
             Icon(
-                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = toggleLabel,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )

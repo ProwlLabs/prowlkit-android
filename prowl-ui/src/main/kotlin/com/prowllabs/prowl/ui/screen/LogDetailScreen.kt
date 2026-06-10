@@ -17,9 +17,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -162,7 +162,7 @@ fun LogDetailScreen(
                         enabled = log != null,
                     ) {
                         Icon(
-                            imageVector = if (isWatched) Icons.Outlined.Star else Icons.Outlined.StarOutline,
+                            imageVector = if (isWatched) Icons.Filled.Star else Icons.Filled.FavoriteBorder,
                             contentDescription = stringResource(
                                 if (isWatched) R.string.prowl_unwatch_endpoint else R.string.prowl_watch_endpoint,
                             ),
